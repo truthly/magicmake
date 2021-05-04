@@ -93,8 +93,8 @@ do
     then
       install=1
     else
-      read -p "$LOG_PREFIX Do you want to install [37;1m$package[0m? [Y/n] " -r
-      if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]
+      read -p "$LOG_PREFIX Do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
+      if [[ $yes_no =~ ^[Yy]$ ]] || [[ -z $yes_no ]]
       then
         install=1
       else
