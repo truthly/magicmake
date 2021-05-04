@@ -13,7 +13,7 @@
 #
 if [ -z "$BUILD_CMD" ]
 then
-  if [ -z "$@" ]
+  if [ $# -eq 0 ]
   then
     BUILD_CMD="make"
   else
