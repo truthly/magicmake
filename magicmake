@@ -1,0 +1,85 @@
+#!/bin/sh
+#
+# 🪄🤖 magicmake - auto-install missing packages required when building from source
+#
+# runs BUILD_CMD in a loop, installing any missing packages,
+# until there are no more packages to install
+#
+# the BUILD_CMD to run can be set via env,
+# otherwise it's set to the passed arguments
+#
+# the default BUILD_CMD is `make` when magicmake
+# is called with no arguments, and when not set via env
+#
+if [ -z "$BUILD_CMD" ]
+then
+  if [ -z "$@" ]
+  then
+    BUILD_CMD="make"
+  else
+    BUILD_CMD="$@"
+  fi
+fi
+#
+# override INSTALL_CMD to run some other command
+# e.g. just `echo` to do a dry run, showing what
+# packages will be installed in the next iteration
+#
+# N.B: If set to `echo`, no packages will be installed
+# and magicmake will end up in an infinite loop that
+# you need to Ctrl+C manually to get out of
+#
+if [ -z "$INSTALL_CMD" ]
+then
+  INSTALL_CMD="sudo apt-get -y install"
+fi
+STRACE_FILE=$(mktemp)
+#
+# allow read permissions to anyone on
+# the STRACE_FILE so that the PostgreSQL
+# function can read it
+#
+chmod o+r $STRACE_FILE
+#
+# show an ANSI colored "[magicmake]" console log line prefix
+# to make it visually easier to identify messages from magicmake
+#
+LOG_PREFIX="🪄 🤖 [38;5;39mm[38;5;48ma[38;5;154mg[38;5;208mi[38;5;199mc[38;5;93mm[38;5;33ma[38;5;49mk[38;5;118me[0m:"
+#
+# loop until there are no more packages to install
+#
+while true;
+do
+  #
+  # the BUILD_CMD is run via `strace` which will log the full path
+  # of any successful/unsuccessful file accesses
+  #
+  strace -e trace=file -o $STRACE_FILE -f $BUILD_CMD
+  #
+  # since build tools look for files at different paths,
+  # the same file_name might at first be missing at some path(s)
+  # but then eventually be found at some other path
+  #
+  # to determine what file_names are truly missing,
+  # the magicmake.suggest_packages() PostgreSQL function
+  # will compute the set of file_names missing at path(s)
+  # except the file_names that were found at some path(s)
+  #
+  PKGS=$(psql -X -t -A -c "SELECT magicmake.suggest_packages('$STRACE_FILE')")
+  #
+  # magicmake.suggest_packages() returns a list of packages to install
+  # or no rows if no packages to install could be found
+  #
+  if [ -z "$PKGS" ]
+  then
+    echo "$LOG_PREFIX no more packages to install ✅"
+    break
+  else
+    echo "$LOG_PREFIX installing $PKGS"
+    $INSTALL_CMD $PKGS
+  fi
+done
+#
+# the temporary strace file is removed at the end
+#
+rm -f "$STRACE_FILE"

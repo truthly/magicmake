@@ -1,0 +1,5 @@
+.DS_Store
+magicmake--*.sql
+regression.diffs
+regression.out
+results
