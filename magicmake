@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # 🪄🤖 magicmake - auto-install missing packages required when building from source
 #
@@ -103,7 +103,7 @@ do
     fi
     if [ $install = 1 ]
     then
-      $INSTALL_CMD $PKGS
+      $INSTALL_CMD $package
     fi
   done
   if [ $count = 0 ]
