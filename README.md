@@ -25,12 +25,12 @@
 
 <h2 id="about">1. About</h2>
 
-`magicmake` is a command line tool to auto-install all missing packages required to build a project from source
+`magicmake` is a command line tool to auto-install all missing packages required to build a project from source.
 
 <h2 id="rationale">2. Rationale</h2>
 
 It is sometimes necessary to install a project from source,
-such as when not included in the distribution's package management system.
+when it's not included in the distribution's package management system.
 
 Many projects document build prerequisites in the `README`,
 with instructions on the exact package names that needs to be installed,
@@ -39,6 +39,21 @@ for different distributions.
 However, if it doesn't say exactly what packages that needs to be installed
 for your distribution, it can be a tedious manual task to figure it out,
 using [apt-file] or a search engine.
+
+`magicmake` is primarily meant to be useful when working locally trying out
+new projects in a virtualized environment, rather than to be used in production,
+even if doing so should be relatively harmless, as `apt-get install` will
+display a Yes/No prompt for each suggested package to install.
+
+Also, if it's necessary to script the building and installation of
+completely unknown projects, if just wanting to test if such projects
+can be built and to run the tests, it doesn't help if the `README`
+contains human readable instructions.
+
+There are probably many other reasons why this tool is a bad idea in general,
+but is meant to provide a lazy method way to build projects,
+when really insisting on trying to automate the process,
+that sometimes works and sometimes doesn't, might might be acceptable to some users.
 
 <h2 id="dependencies">3. Dependencies</h2>
 
@@ -54,12 +69,8 @@ but as the author is only using Ubuntu, no effort has been made to port it to ot
 
 Install dependencies:
 
-    sudo apt-get -y install gnupg
-    sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
     sudo apt-get update
-    sudo apt-get -y install postgresql postgresql-server-dev-13 build-essential python3 apt-file
-    sudo service postgresql start
+    sudo apt-get install -y postgresql postgresql-server-dev-12 build-essential python3 apt-file
     sudo apt-file update
 
 Create a PostgreSQL database for your user, if you don't have one already.
@@ -106,20 +117,16 @@ For convenience, you might want to export `BUILD_CMD` if frequently reused
     export BUILD_CMD="./configure --prefix=/usr/local"
     magicmake
 
-The default command to default packages is `sudo apt-get -y install`,
+The default command to default packages is `sudo apt-get install`,
 and can be overridden via the `INSTALL_CMD` environment variable
 
 To do a dry-run, set it to `echo`, showing the packages that would have been installed.
 
     INSTALL_CMD="echo" magicmake
 
-To prompt before installing a package, remove the `-y` from the install command.
+To blindly automatically answer **Yes** to all prompts and to run non-interactively, add the `-y` option to the install command.
 
-    INSTALL_CMD="sudo apt-get install" magicmake
-
-This is necessary when packages exist, but are not supported by the hardware,
-such as if the compiler looks for `/usr/bin/ptxas` provided by the `nvidia-cuda-toolkit`,
-which makes no sense to install on a machine that lacks a GPU.
+    INSTALL_CMD="sudo apt-get -y install" magicmake
 
 <h2 id="examples">6. Examples</h2>
 
@@ -290,7 +297,7 @@ using only standard commands such as `awk`, `sed` or `cut`, please let me know.
 
 <h3 id="file-packages">magicmake.file_packages table</h3>
 
-The file packages database is loaded into the `magicmake.file_packages` table.
+The file packages database is loaded into the [magicmake.file_packages] table.
 
 ```sql
 CREATE TABLE magicmake.file_packages (
@@ -449,3 +456,6 @@ FROM matching_packages;
 [Python]: https://www.python.org/
 [rsplit()]: https://www.w3schools.com/python/ref_string_rsplit.asp
 [bool_or()]: https://www.postgresql.org/docs/current/functions-aggregate.html#FUNCTIONS-AGGREGATE-TABLE
+[magicmake.suggest_packages()]: https://github.com/truthly/magicmake/blob/master/FUNCTIONS/suggest_packages.sql
+[magicmake.strace]: https://github.com/truthly/magicmake/blob/master/TABLES/strace.sql
+[magicmake.file_packages]: https://github.com/truthly/magicmake/blob/master/TABLES/file_packages.sql
