@@ -154,32 +154,34 @@ Below are few examples of the full console log of using `magicmake` to install a
     $ cd pgsql-http
     $ magicmake
     make: curl-config: Command not found
-    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -I. -I./ -I/usr/include/postgresql/13/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2   -c -o http.o http.c
+    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o http.o http.c
     http.c:72:10: fatal error: curl/curl.h: No such file or directory
       72 | #include <curl/curl.h>
           |          ^~~~~~~~~~~~~
     compilation terminated.
     make: *** [<builtin>: http.o] Error 1
-    🪄 🤖 magicmake: installing libcurl4-gnutls-dev
+    🪄 🤖 magicmake: Do you want to install libcurl4-gnutls-dev? [Y/n] y
     Reading package lists... Done
     Building dependency tree
     Reading state information... Done
     Suggested packages:
-      libcurl4-doc libgnutls28-dev libidn11-dev libkrb5-dev libldap2-dev librtmp-dev libssh2-1-dev zlib1g-dev
+      libcurl4-doc libgnutls28-dev libidn11-dev libkrb5-dev libldap2-dev librtmp-dev libssh2-1-dev pkg-config zlib1g-dev
     The following NEW packages will be installed:
       libcurl4-gnutls-dev
     0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
     Need to get 0 B/318 kB of archives.
     After this operation, 1526 kB of additional disk space will be used.
     Selecting previously unselected package libcurl4-gnutls-dev:amd64.
-    (Reading database ... 109367 files and directories currently installed.)
+    (Reading database ... 83204 files and directories currently installed.)
     Preparing to unpack .../libcurl4-gnutls-dev_7.68.0-1ubuntu2.5_amd64.deb ...
     Unpacking libcurl4-gnutls-dev:amd64 (7.68.0-1ubuntu2.5) ...
     Setting up libcurl4-gnutls-dev:amd64 (7.68.0-1ubuntu2.5) ...
     Processing triggers for man-db (2.9.1-1) ...
-    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -I. -I./ -I/usr/include/postgresql/13/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2   -c -o http.o http.c
-    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -shared -o http.so http.o -L/usr/lib/x86_64-linux-gnu  -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -L/usr/lib/llvm-9/lib  -Wl,--as-needed  -lcurl
-    /usr/bin/clang-9 -Wno-ignored-attributes -fno-strict-aliasing -fwrapv -O2  -I. -I./ -I/usr/include/postgresql/13/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -flto=thin -emit-llvm -c -o http.bc http.c
+    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o http.o http.c
+    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -shared -o http.so http.o -L/usr/lib/x86_64-linux-gnu  -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -L/usr/lib/llvm-10/lib  -L/usr/lib/x86_64-linux-gnu/mit-krb5 -Wl,--as-needed  -lcurl
+    /usr/bin/clang-10 -Wno-ignored-attributes -fno-strict-aliasing -fwrapv -O2  -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5 -flto=thin -emit-llvm -c -o http.bc http.c
+    🪄 🤖 magicmake: Do you want to install nvidia-cuda-toolkit? [Y/n] n
+    make: Nothing to be done for 'all'.
     🪄 🤖 magicmake: no more packages to install ✅
 
 <h3 id="pguri">https://github.com/petere/pguri.git</h3>
@@ -187,18 +189,16 @@ Below are few examples of the full console log of using `magicmake` to install a
     $ git clone https://github.com/petere/pguri.git
     $ cd pguri
     $ magicmake
+    /bin/sh: 1: pkg-config: not found
     Makefile:10: liburiparser not registed with pkg-config, build might fail
-    Package liburiparser was not found in the pkg-config search path.
-    Perhaps you should add the directory containing `liburiparser.pc'
-    to the PKG_CONFIG_PATH environment variable
-    No package 'liburiparser' found
-    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC  -I. -I./ -I/usr/include/postgresql/13/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2   -c -o uri.o uri.c
+    make: pkg-config: Command not found
+    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC  -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o uri.o uri.c
     uri.c:10:10: fatal error: uriparser/Uri.h: No such file or directory
       10 | #include <uriparser/Uri.h>
           |          ^~~~~~~~~~~~~~~~~
     compilation terminated.
     make: *** [<builtin>: uri.o] Error 1
-    🪄 🤖 magicmake: installing liburiparser-dev
+    🪄 🤖 magicmake: Do you want to install liburiparser-dev? [Y/n] y
     Reading package lists... Done
     Building dependency tree
     Reading state information... Done
@@ -209,8 +209,9 @@ Below are few examples of the full console log of using `magicmake` to install a
     0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
     Need to get 0 B/51.3 kB of archives.
     After this operation, 229 kB of additional disk space will be used.
+    Do you want to continue? [Y/n]
     Selecting previously unselected package liburiparser1:amd64.
-    (Reading database ... 109374 files and directories currently installed.)
+    (Reading database ... 83229 files and directories currently installed.)
     Preparing to unpack .../liburiparser1_0.9.3-2_amd64.deb ...
     Unpacking liburiparser1:amd64 (0.9.3-2) ...
     Selecting previously unselected package liburiparser-dev.
@@ -219,9 +220,26 @@ Below are few examples of the full console log of using `magicmake` to install a
     Setting up liburiparser1:amd64 (0.9.3-2) ...
     Setting up liburiparser-dev (0.9.3-2) ...
     Processing triggers for libc-bin (2.31-0ubuntu9.2) ...
-    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC  -I. -I./ -I/usr/include/postgresql/13/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2   -c -o uri.o uri.c
-    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -shared -o uri.so uri.o -L/usr/lib/x86_64-linux-gnu  -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -L/usr/lib/llvm-9/lib  -Wl,--as-needed  -luriparser
-    /usr/bin/clang-9 -Wno-ignored-attributes -fno-strict-aliasing -fwrapv -O2   -I. -I./ -I/usr/include/postgresql/13/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -flto=thin -emit-llvm -c -o uri.bc uri.c
+    🪄 🤖 magicmake: Do you want to install pkg-config? [Y/n] y
+    Reading package lists... Done
+    Building dependency tree
+    Reading state information... Done
+    The following NEW packages will be installed:
+      pkg-config
+    0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+    Need to get 45.5 kB of archives.
+    After this operation, 195 kB of additional disk space will be used.
+    Get:1 http://se.archive.ubuntu.com/ubuntu focal/main amd64 pkg-config amd64 0.29.1-0ubuntu4 [45.5 kB]
+    Fetched 45.5 kB in 0s (236 kB/s)
+    Selecting previously unselected package pkg-config.
+    (Reading database ... 83246 files and directories currently installed.)
+    Preparing to unpack .../pkg-config_0.29.1-0ubuntu4_amd64.deb ...
+    Unpacking pkg-config (0.29.1-0ubuntu4) ...
+    Setting up pkg-config (0.29.1-0ubuntu4) ...
+    Processing triggers for man-db (2.9.1-1) ...
+    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC  -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o uri.o uri.c
+    gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -shared -o uri.so uri.o -L/usr/lib/x86_64-linux-gnu  -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -L/usr/lib/llvm-10/lib  -L/usr/lib/x86_64-linux-gnu/mit-krb5 -Wl,--as-needed  -luriparser
+    /usr/bin/clang-10 -Wno-ignored-attributes -fno-strict-aliasing -fwrapv -O2   -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5 -flto=thin -emit-llvm -c -o uri.bc uri.c
     🪄 🤖 magicmake: no more packages to install ✅
 
 <h2 id="implementation">7. Implementation</h2>
@@ -342,23 +360,45 @@ The file is made readable by any user to allow PostgreSQL to read it.
 `magicmake` will run the build and install commands in a loop,
 until no more packages to install can be found.
 
-    while true;
-    do
-      strace -e trace=file -o $STRACE_FILE -f $BUILD_CMD
-      PKGS=$(psql -X -t -A -c "SELECT magicmake.suggest_packages('$STRACE_FILE')")
-      if [ -z "$PKGS" ]
+```bash
+while true;
+do
+  strace -e trace=file -o $STRACE_FILE -f $BUILD_CMD
+  count=0
+  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$STRACE_FILE')")
+  do
+    count=$((count+1))
+    install=0
+    if [ $prompt = 0 ]
+    then
+      install=1
+    else
+      read -p "$LOG_PREFIX Do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
+      if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
       then
-        echo "$LOG_PREFIX no more packages to install ✅"
-        break
+        install=1
       else
-        echo "$LOG_PREFIX installing $PKGS"
-        $INSTALL_CMD $PKGS
+        install=0
       fi
-    done
+    fi
+    if [ $install = 1 ]
+    then
+      $INSTALL_CMD $package
+    fi
+  done
+  if [ $count = 0 ]
+  then
+    echo "$LOG_PREFIX no more packages to install ✅"
+    break
+  fi
+done
+```
 
 Finally, it will remove the temporary `STRACE_FILE`.
 
-    rm -f "$STRACE_FILE"
+```bash
+rm -f "$STRACE_FILE"
+```
 
 <h3 id="suggest-packages">magicmake.suggest_packages(strace_log_file_path text)</h3>
 
