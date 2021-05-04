@@ -60,10 +60,10 @@ that sometimes works and sometimes doesn't, might might be acceptable to some us
 `magicmake` currently only works for Ubuntu. The concept is probably compatible with other distros,
 but as the author is only using Ubuntu, no effort has been made to port it to other distros.
 
-  - Ubuntu 20.04.2 LTS
+  - Ubuntu 20.04.2 LTS *(might work with other versions, but not tested)*
   - apt-file
   - Python3
-  - PostgreSQL 13
+  - PostgreSQL
 
 <h2 id="installation">4. Installation</h2>
 
