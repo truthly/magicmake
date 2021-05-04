@@ -128,6 +128,15 @@ To blindly automatically answer **Yes** to all prompts and to run non-interactiv
 
     INSTALL_CMD="sudo apt-get -y install" magicmake
 
+`magicmake` will remember what packages have been suggested, to avoid spamming the user with the same suggestions over and over again.
+Each package is only suggested once. If answering **No*** when prompted, the same package will not be suggested again, even if
+it's still missing and needed later when building some other project using `magicmake`.
+
+To clear `magicmake`'s memory, causing any missing packages to be suggested again, even though they have been suggested before,
+`TRUNCATE` the [magicmake.suggested_packages] table:
+
+    psql -c "TRUNCATE magicmake.suggested_packages"
+
 <h2 id="examples">6. Examples</h2>
 
 Personally, I'm mostly using `magicmake` to automate the process of building PostgreSQL extensions,
@@ -459,3 +468,4 @@ FROM matching_packages;
 [magicmake.suggest_packages()]: https://github.com/truthly/magicmake/blob/master/FUNCTIONS/suggest_packages.sql
 [magicmake.strace]: https://github.com/truthly/magicmake/blob/master/TABLES/strace.sql
 [magicmake.file_packages]: https://github.com/truthly/magicmake/blob/master/TABLES/file_packages.sql
+[magicmake.suggested_packages]: https://github.com/truthly/magicmake/blob/master/TABLES/suggested_packages.sql

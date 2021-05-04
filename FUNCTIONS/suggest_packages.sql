@@ -24,7 +24,7 @@ WHERE log_line_text ~ '^(?:\d+ )?[a-z]+\(';
 -- match the strace rows against file_packages
 --
 WITH
-truly_missing AS
+missing_files AS
 (
   SELECT
     file_name,
@@ -33,19 +33,18 @@ truly_missing AS
   GROUP BY file_name
   HAVING bool_or(missing) AND NOT bool_or(NOT missing)
 ),
-matching_packages AS
+missing_packages AS
 (
   SELECT
     packages
-  FROM truly_missing
+  FROM missing_files
   JOIN magicmake.file_packages
-    ON file_packages.file_name = truly_missing.file_name
-  AND file_packages.file_path = ANY(truly_missing.file_paths)
-)
-SELECT
-  string_agg
-  (
-    DISTINCT
+    ON file_packages.file_name = missing_files.file_name
+  AND file_packages.file_path = ANY(missing_files.file_paths)
+),
+missing_package_names AS
+(
+  SELECT DISTINCT
     regexp_replace
     (
       --
@@ -58,12 +57,34 @@ SELECT
       --
       '^.*?([^/]+)$',
       '\1'
-    ),
-    ' '
+    ) AS package
+  FROM missing_packages
+),
+new_missing_packages AS
+(
+  --
+  -- remember what packages have been suggested
+  -- to avoid spamming the user, if answering "No"
+  -- when prompted if a package should be installed
+  --
+  INSERT INTO magicmake.suggested_packages
+    (package)
+  SELECT
+    package
+  FROM missing_package_names
+  WHERE NOT EXISTS
+  (
+    SELECT 1 FROM magicmake.suggested_packages
+    WHERE suggested_packages.package = missing_package_names.package
   )
+  RETURNING package
+)
+
+SELECT
+  string_agg(package,' ')
 INTO
   _packages
-FROM matching_packages;
+FROM new_missing_packages;
 --
 -- return blank space separated list of packages
 --
