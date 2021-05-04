@@ -1,8 +1,9 @@
 EXTENSION = magicmake
 DATA = magicmake--1.0.sql
 
-REGRESS = \
-	create_extension
+REGRESS = create_extension
+
+SCRIPTS = magicmake
 
 EXTRA_CLEAN = magicmake--1.0.sql
 

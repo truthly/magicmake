@@ -1,10 +1,8 @@
 CREATE OR REPLACE FUNCTION magicmake.suggest_packages(strace_log_file_path text)
-RETURNS text
+RETURNS SETOF text
 LANGUAGE plpgsql
 AS
 $$
-DECLARE
-_packages text;
 BEGIN
 --
 -- truncate the magicmake.strace table before importing
@@ -23,6 +21,7 @@ WHERE log_line_text ~ '^(?:\d+ )?[a-z]+\(';
 --
 -- match the strace rows against file_packages
 --
+RETURN QUERY
 WITH
 missing_files AS
 (
@@ -79,15 +78,8 @@ new_missing_packages AS
   )
   RETURNING package
 )
-
 SELECT
-  string_agg(package,' ')
-INTO
-  _packages
+  package
 FROM new_missing_packages;
---
--- return blank space separated list of packages
---
-RETURN _packages;
 END
 $$;

@@ -11,6 +11,22 @@
 # the default BUILD_CMD is `make` when magicmake
 # is called with no arguments, and when not set via env
 #
+usage() { echo "Usage: $0 [-y] [build_command [build_arguments]]" 1>&2; exit 1; }
+
+prompt=1
+while getopts y opt
+do
+  case "$opt" in
+    y)
+      prompt=0
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+
 if [ -z "$BUILD_CMD" ]
 then
   if [ $# -eq 0 ]
@@ -65,18 +81,35 @@ do
   # will compute the set of file_names missing at path(s)
   # except the file_names that were found at some path(s)
   #
-  PKGS=$(psql -X -t -A -c "SELECT magicmake.suggest_packages('$STRACE_FILE')")
-  #
   # magicmake.suggest_packages() returns a list of packages to install
   # or no rows if no packages to install could be found
   #
-  if [ -z "$PKGS" ]
+  count=0
+  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$STRACE_FILE')")
+  do
+    count=$((count+1))
+    install=0
+    if [ $prompt = 0 ]
+    then
+      install=1
+    else
+      read -p "$LOG_PREFIX Do you want to install [37;1m$package[0m? [Y/n] " -r
+      if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]
+      then
+        install=1
+      else
+        install=0
+      fi
+    fi
+    if [ $install = 1 ]
+    then
+      $INSTALL_CMD $PKGS
+    fi
+  done
+  if [ $count = 0 ]
   then
     echo "$LOG_PREFIX no more packages to install ✅"
     break
-  else
-    echo "$LOG_PREFIX installing $PKGS"
-    $INSTALL_CMD $PKGS
   fi
 done
 #

@@ -90,7 +90,7 @@ Install magicmake:
 
 <h2 id="usage">5. Usage</h2>
 
-    magicmake [build_command [build_arguments]]
+    magicmake [-y] [build_command [build_arguments]]
 
 Calling `magicmake` with no arguments will invoke `make`
 
@@ -124,9 +124,13 @@ To do a dry-run, set it to `echo`, showing the packages that would have been ins
 
     INSTALL_CMD="echo" magicmake
 
-To blindly automatically answer **Yes** to all prompts and to run non-interactively, add the `-y` option to the install command.
+To run non-interactively and blindly automatically install all missing packages, pass the `-y` option.
 
-    INSTALL_CMD="sudo apt-get -y install" magicmake
+    magicmake -y
+
+In addition, to also answer **Yes** to all apt prompts, add the `-y` option also to the install command.
+
+    INSTALL_CMD="sudo apt-get -y install" magicmake -y
 
 `magicmake` will remember what packages have been suggested, to avoid spamming the user with the same suggestions over and over again.
 Each package is only suggested once. If answering **No*** when prompted, the same package will not be suggested again, even if
@@ -390,7 +394,7 @@ and returns each unique `file_name` with an array of all `file_path`s where the 
 
 ```sql
 WITH
-truly_missing AS
+missing_files AS
 (
   SELECT
     file_name,
@@ -404,15 +408,15 @@ truly_missing AS
 `file_name` and `file_paths` from the `strace` query above is then matched against the `magicmake.file_packages` table's corresponding columns.
 
 ```sql
-matching_packages AS
+missing_packages AS
 (
   SELECT
     packages
-  FROM strace
+  FROM missing_files
   JOIN magicmake.file_packages
-    ON file_packages.file_name = strace.file_name
-  AND file_packages.file_path = ANY(strace.file_paths)
-)
+    ON file_packages.file_name = missing_files.file_name
+  AND file_packages.file_path = ANY(missing_files.file_paths)
+),
 ```
 
 `packages` normally only contains one package, but in a few cases
@@ -428,14 +432,10 @@ The last part of the package path is the package name,
 which is extracted using the regular expression `^.*?([^/]+)$`,
 which captures the last string of non-slash characters.
 
-`string_agg()` builds a string of all distinct package names,
-separated by blank space ` `.
-
 ```sql
-SELECT
-  string_agg
-  (
-    DISTINCT
+missing_package_names AS
+(
+  SELECT DISTINCT
     regexp_replace
     (
       --
@@ -448,10 +448,39 @@ SELECT
       --
       '^.*?([^/]+)$',
       '\1'
-    ),
-    ' '
+    ) AS package
+  FROM missing_packages
+),
+```
+
+New missing packages that have not been suggested before
+are saved to the [magicmake.suggested_packages] table
+and returned to the `magicmake` script, which will prompt the
+user whether or not to install each suggested package.
+
+```sql
+new_missing_packages AS
+(
+  --
+  -- remember what packages have been suggested
+  -- to avoid spamming the user, if answering "No"
+  -- when prompted if a package should be installed
+  --
+  INSERT INTO magicmake.suggested_packages
+    (package)
+  SELECT
+    package
+  FROM missing_package_names
+  WHERE NOT EXISTS
+  (
+    SELECT 1 FROM magicmake.suggested_packages
+    WHERE suggested_packages.package = missing_package_names.package
   )
-FROM matching_packages;
+  RETURNING package
+)
+SELECT
+  package
+FROM new_missing_packages;
 ```
 
 [strace]: https://en.wikipedia.org/wiki/Strace
