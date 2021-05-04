@@ -87,6 +87,7 @@ Install magicmake:
     make installcheck
     psql -c "CREATE EXTENSION magicmake"
     ./update_file_packages.py | psql
+    sudo ln -s "`pg_config --bindir`/magicmake" /usr/local/bin/
 
 <h2 id="usage">5. Usage</h2>
 
