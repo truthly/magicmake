@@ -6,7 +6,7 @@ usage() { echo "Usage: $0 [-y] [-q] [build_command [build_arguments]]" 1>&2; exi
 
 prompt=1
 quiet=0
-while getopts y opt
+while getopts y:q opt
 do
   case "$opt" in
     y)
@@ -65,9 +65,9 @@ do
   #
   if [ $quiet = 1 ]
   then
-    strace -e trace=%file,%process -o $strace_log_file -f $MAGICMAKE_BUILD_CMD 2>&1 >/dev/null
+    strace -e trace=%file,%process -o $strace_log_file -f $MAGICMAKE_BUILD_CMD &>/dev/null
   else
-    strace -e trace=%file,%process -o $strace_log_file -f $MAGICMAKE_BUILD_CMD 2>&1 >/dev/null
+    strace -e trace=%file,%process -o $strace_log_file -f $MAGICMAKE_BUILD_CMD
   fi
   #
   # since build tools look for files at different paths,
