@@ -70,7 +70,7 @@ do
   # the BUILD_CMD is run via `strace` which will log the full path
   # of any successful/unsuccessful file accesses
   #
-  strace -e trace=file -o $STRACE_FILE -f $BUILD_CMD
+  strace -e trace=%file,%process -o $STRACE_FILE -f $BUILD_CMD
   #
   # since build tools look for files at different paths,
   # the same file_name might at first be missing at some path(s)

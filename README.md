@@ -404,15 +404,16 @@ rm -f "$STRACE_FILE"
 
 <h3 id="suggest-packages">magicmake.suggest_packages(strace_log_file_path text)</h3>
 
-The [magicmake.suggest_packages()] function uses a table [magicmake.strace] to store the parsed strace log lines.
+The [magicmake.suggest_packages()] function uses a table [magicmake.strace] to store the strace log lines.
 
 ```sql
 CREATE TABLE magicmake.strace (
 log_line_id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
-log_line_text text NOT NULL,
-file_path text GENERATED ALWAYS AS ((regexp_match(log_line_text,'"/([^"]+)"'))[1]) STORED,
-file_name text GENERATED ALWAYS AS ((regexp_match(log_line_text,'"[^"]*?([^/"]+)"'))[1]) STORED,
-missing boolean NOT NULL GENERATED ALWAYS AS (log_line_text LIKE '%ENOENT (No such file or directory)') STORED,
+log_line text NOT NULL,
+file_path text GENERATED ALWAYS AS ((regexp_match(log_line,'"/([^"]+)"'))[1]) STORED,
+file_name text GENERATED ALWAYS AS ((regexp_match(log_line,'"[^"]*?([^/"]+)"'))[1]) STORED,
+missing boolean NOT NULL GENERATED ALWAYS AS (log_line LIKE '%ENOENT (No such file or directory)') STORED,
+pkg_config text GENERATED ALWAYS AS ((regexp_match(log_line,'^(?:\d+ +)?[a-z]+\("/usr/bin/pkg-config", \["pkg-config"(, "[^"]*")+\]'))[1]) STORED,
 PRIMARY KEY (log_line_id)
 );
 ```
@@ -422,11 +423,11 @@ The strace output is read from the `strace_log_file_path` file and written to th
 ```sql
 TRUNCATE magicmake.strace;
 INSERT INTO magicmake.strace
-  (log_line_text)
+  (log_line)
 SELECT
-  log_line_text
-FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line_text
-WHERE log_line_text ~ '^(?:\d+ +)?[a-z]+\(';
+  log_line
+FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line
+WHERE log_line ~ '^(?:\d+ +)?[a-z]+\(';
 ```
 
 The strace log file is splitted on newlines and only lines matching a regex to filter out possible file syscalls are imported.

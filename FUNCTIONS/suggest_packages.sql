@@ -13,11 +13,11 @@ TRUNCATE magicmake.strace;
 -- and filtering out lines that looks like syscalls
 --
 INSERT INTO magicmake.strace
-  (log_line_text)
+  (log_line)
 SELECT
-  log_line_text
-FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line_text
-WHERE log_line_text ~ '^(?:\d+ +)?[a-z]+\(';
+  log_line
+FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line
+WHERE log_line ~ '^(?:\d+ +)?[a-z]+\(';
 --
 -- match the strace rows against file_packages
 --
