@@ -316,7 +316,7 @@ The command below shows an example of the ten shortest such cases.
 To import these text files into [PostgreSQL], we need to do some preprocessing,
 using [Python]'s [rsplit()] method. The below line is from [update_file_packages.py]:
 
-```python
+```py
 cols = line.rsplit(maxsplit=1)
 ```
 
