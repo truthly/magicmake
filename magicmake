@@ -2,23 +2,18 @@
 #
 # 🪄🤖 magicmake - auto-install missing packages required when building from source
 #
-# runs BUILD_CMD in a loop, installing any missing packages,
-# until there are no more packages to install
-#
-# the BUILD_CMD to run can be set via env,
-# otherwise it's set to the passed arguments
-#
-# the default BUILD_CMD is `make` when magicmake
-# is called with no arguments, and when not set via env
-#
-usage() { echo "Usage: $0 [-y] [build_command [build_arguments]]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-y] [-q] [build_command [build_arguments]]" 1>&2; exit 1; }
 
 prompt=1
+quiet=0
 while getopts y opt
 do
   case "$opt" in
     y)
       prompt=0
+      ;;
+    q)
+      quiet=1
       ;;
     *)
       usage
@@ -27,35 +22,33 @@ do
 done
 shift $((OPTIND-1))
 
-if [ -z "$BUILD_CMD" ]
+if [ -z "$MAGICMAKE_BUILD_CMD" ]
 then
   if [ $# -eq 0 ]
   then
-    BUILD_CMD="make"
+    MAGICMAKE_BUILD_CMD="make"
   else
-    BUILD_CMD="$@"
+    MAGICMAKE_BUILD_CMD="$@"
   fi
 fi
-#
-# override INSTALL_CMD to run some other command
-# e.g. just `echo` to do a dry run, showing what
-# packages will be installed in the next iteration
-#
-# N.B: If set to `echo`, no packages will be installed
-# and magicmake will end up in an infinite loop that
-# you need to Ctrl+C manually to get out of
-#
-if [ -z "$INSTALL_CMD" ]
+
+if [ -z "$MAGICMAKE_INSTALL_CMD" ]
 then
-  INSTALL_CMD="sudo apt install"
+  if [ $prompt = 0 ]
+  then
+    MAGICMAKE_INSTALL_CMD="sudo apt-get -y install"
+  else
+    MAGICMAKE_INSTALL_CMD="sudo apt install"
+  fi
 fi
-STRACE_FILE=$(mktemp)
+
+strace_log_file=$(mktemp)
 #
 # allow read permissions to anyone on
-# the STRACE_FILE so that the PostgreSQL
+# the strace_log_file so that the PostgreSQL
 # function can read it
 #
-chmod o+r $STRACE_FILE
+chmod o+r $strace_log_file
 #
 # show an ANSI colored "[magicmake]" console log line prefix
 # to make it visually easier to identify messages from magicmake
@@ -67,10 +60,15 @@ LOG_PREFIX="🪄 🤖 [38;5;39mm[38;5;48ma[38;5;154mg[38;5;208mi[38;5;199mc
 while true;
 do
   #
-  # the BUILD_CMD is run via `strace` which will log the full path
+  # the MAGICMAKE_BUILD_CMD is run via `strace` which will log the full path
   # of any successful/unsuccessful file accesses
   #
-  strace -e trace=%file,%process -o $STRACE_FILE -f $BUILD_CMD
+  if [ $quiet = 1 ]
+  then
+    strace -e trace=%file,%process -o $strace_log_file -f $MAGICMAKE_BUILD_CMD 2>&1 >/dev/null
+  else
+    strace -e trace=%file,%process -o $strace_log_file -f $MAGICMAKE_BUILD_CMD 2>&1 >/dev/null
+  fi
   #
   # since build tools look for files at different paths,
   # the same file_name might at first be missing at some path(s)
@@ -85,15 +83,16 @@ do
   # or no rows if no packages to install could be found
   #
   count=0
-  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$STRACE_FILE')")
+  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_file')")
   do
     count=$((count+1))
     install=0
     if [ $prompt = 0 ]
     then
+      echo "$LOG_PREFIX installing [37;1m$package[0m"
       install=1
     else
-      read -p "$LOG_PREFIX Do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
+      read -p "$LOG_PREFIX do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
       if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
       then
         install=1
@@ -103,7 +102,7 @@ do
     fi
     if [ $install = 1 ]
     then
-      $INSTALL_CMD $package
+      $MAGICMAKE_INSTALL_CMD $package
     fi
   done
   if [ $count = 0 ]
@@ -115,4 +114,4 @@ done
 #
 # the temporary strace file is removed at the end
 #
-rm -f "$STRACE_FILE"
+rm -f "$strace_log_file"

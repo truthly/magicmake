@@ -92,7 +92,7 @@ Install magicmake:
 
 <h2 id="usage">5. Usage</h2>
 
-    magicmake [-y] [build_command [build_arguments]]
+    magicmake [-y] [-q] [build_command [build_arguments]]
 
 Calling `magicmake` with no arguments will invoke `make`
 
@@ -110,25 +110,26 @@ The `build_command` is invoked with all the `build_arguments`, if any
 
     magicmake ./configure --prefix=/usr/local
 
-The `build_command` can also be set via the `BUILD_CMD` environment variable
+The `build_command` can also be set via the `MAGICMAKE_BUILD_CMD` environment variable
 
-    BUILD_CMD="./configure --prefix=/usr/local" magicmake
+    MAGICMAKE_BUILD_CMD="./configure --prefix=/usr/local" magicmake
 
-For convenience, you might want to export `BUILD_CMD` if frequently reused
+For convenience, you might want to export `MAGICMAKE_BUILD_CMD` if frequently reused
 
-    export BUILD_CMD="./configure --prefix=/usr/local"
+    export MAGICMAKE_BUILD_CMD="./configure --prefix=/usr/local"
     magicmake
 
 The default command to install packages is `sudo apt install`,
-and can be overridden via the `INSTALL_CMD` environment variable
+and can be overridden via the `MAGICMAKE_INSTALL_CMD` environment variable
 
 To run non-interactively and blindly automatically install all missing packages, pass the `-y` option.
+This will also change `MAGICMAKE_INSTALL_CMD` to `sudo apt-get -y install` which will answer **Yes** to all apt prompts.
 
     magicmake -y
 
-In addition, to also answer **Yes** to all apt prompts:
+To suppress all output from the `MAGICMAKE_BUILD_CMD`, pass the `-q` option.
 
-    INSTALL_CMD="sudo apt-get -y install" magicmake -y
+    magicmake -q
 
 `magicmake` will remember what packages have been suggested, to avoid spamming the user with the same suggestions over and over again.
 Each package is only suggested once. If answering **No*** when prompted, the same package will not be suggested again, even if
@@ -350,13 +351,13 @@ CREATE INDEX ON magicmake.file_packages (file_name);
 
 <h3 id="magicmake-command">magicmake command</h3>
 
-`magicmake` will write the `strace` output to a temporary `STRACE_FILE`
+`magicmake` will write the `strace` output to a temporary `strace_log_file`
 which will be read by the PostgreSQL's function `magicmake.suggest_packages()`.
 The file is made readable by any user to allow PostgreSQL to read it.
 
 ```bash
-STRACE_FILE=$(mktemp)
-chmod o+r $STRACE_FILE
+strace_log_file=$(mktemp)
+chmod o+r $strace_log_file
 ```
 
 `magicmake` will run the build and install commands in a loop,
@@ -365,9 +366,9 @@ until no more packages to install can be found.
 ```bash
 while true;
 do
-  strace -e trace=file -o $STRACE_FILE -f $BUILD_CMD
+  strace -e trace=file -o $strace_log_file -f $MAGICMAKE_BUILD_CMD
   count=0
-  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$STRACE_FILE')")
+  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_file')")
   do
     count=$((count+1))
     install=0
@@ -385,7 +386,7 @@ do
     fi
     if [ $install = 1 ]
     then
-      $INSTALL_CMD $package
+      $MAGICMAKE_INSTALL_CMD $package
     fi
   done
   if [ $count = 0 ]
@@ -396,10 +397,10 @@ do
 done
 ```
 
-Finally, it will remove the temporary `STRACE_FILE`.
+Finally, it will remove the temporary `strace_log_file`.
 
 ```bash
-rm -f "$STRACE_FILE"
+rm -f "$strace_log_file"
 ```
 
 <h3 id="suggest-packages">magicmake.suggest_packages(strace_log_file_path text)</h3>
@@ -433,7 +434,7 @@ WHERE log_line ~ '^(?:\d+ +)?[a-z]+\(';
 The strace log file is splitted on newlines and only lines matching a regex to filter out possible file syscalls are imported.
 
 The aggregate function [bool_or()] is used to find each `file_name` that is missing at least once and not found even once,
-and returns each unique `file_name` with an array of all `file_path`s where the `BUILD_CMD` was looking for the file.
+and returns each unique `file_name` with an array of all `file_path`s where the `MAGICMAKE_BUILD_CMD` was looking for the file.
 
 ```sql
 WITH
