@@ -43,17 +43,35 @@ missing_files AS
   FROM
   (
     SELECT
-      pid,
-      regexp_split_to_array((array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL))[1],', ') AS pkg_config_args,
-      array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
-    FROM magicmake.strace
-    GROUP BY pid
-    HAVING array_agg(exit_status) FILTER (WHERE exit_status IS NOT NULL) = ARRAY[1]
-    AND cardinality(array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL)) = 1
+      regexp_split_to_array(pkg_config_exec[1],', ') AS pkg_config_args,
+      pkg_config_paths
+    FROM
+    (
+      SELECT
+        array_agg(exit_status) FILTER (WHERE exit_status IS NOT NULL) AS exit_statuses,
+        array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL) AS pkg_config_exec,
+        array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
+      FROM magicmake.strace
+      GROUP BY pid
+    ) AS filter_agg_pkg_config
+    WHERE
+    --
+    -- find pkg_config calls...
+    --
+      cardinality(pkg_config_exec) = 1
+    AND
+    --
+    -- ...that exited with status 1...
+    --
+      exit_statuses = ARRAY[1]
+    --
+    -- ...possibly meaning a package was missing
+    --
   ) AS pkg_config_rows_per_pid
   CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
   CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
-  JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg ON pkg_config_arg ~ '^[^-][^-]?'
+  JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg
+    ON pkg_config_arg ~ '^[^-][^-]?' -- ignore arguments that look like long options, e.g. --print-errors
   CROSS JOIN regexp_split_to_table(pkg_config_arg,' ') AS pkg_config_name
   GROUP BY 1
 ),
