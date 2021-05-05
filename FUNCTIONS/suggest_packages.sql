@@ -38,8 +38,8 @@ missing_files AS
   -- guess missing pkg_config packages
   --
   SELECT
-    format('%s.pc', pkg_config_arg) AS file_name,
-    array_agg(DISTINCT format('%s%s.pc', pkg_config_path, pkg_config_arg)) AS file_paths
+    format('%s.pc', pkg_config_name) AS file_name,
+    array_agg(DISTINCT format('%s%s.pc', pkg_config_path, pkg_config_name)) AS file_paths
   FROM
   (
     SELECT
@@ -54,6 +54,7 @@ missing_files AS
   CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
   CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
   JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg ON pkg_config_arg ~ '^[^-][^-]?'
+  CROSS JOIN regexp_split_to_table(pkg_config_arg,' ') AS pkg_config_name
   GROUP BY 1
 ),
 missing_packages AS
