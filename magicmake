@@ -47,7 +47,7 @@ fi
 #
 if [ -z "$INSTALL_CMD" ]
 then
-  INSTALL_CMD="sudo apt-get install"
+  INSTALL_CMD="sudo apt install"
 fi
 STRACE_FILE=$(mktemp)
 #

@@ -42,8 +42,8 @@ using [apt-file] or a search engine.
 
 `magicmake` is primarily meant to be useful when working locally trying out
 new projects in a virtualized environment, rather than to be used in production,
-even if doing so should be relatively harmless, as `apt-get install` will
-display a Yes/No prompt for each suggested package to install.
+even if doing so should be relatively harmless, as it will display a Yes/no prompt
+for each suggested package to install.
 
 Also, if it's necessary to script the building and installation of
 completely unknown projects, if just wanting to test if such projects
@@ -51,9 +51,10 @@ can be built and to run the tests, it doesn't help if the `README`
 contains human readable instructions.
 
 There are probably many other reasons why this tool is a bad idea in general,
-but is meant to provide a lazy method way to build projects,
+but is meant to provide a lazy way to build projects,
 when really insisting on trying to automate the process,
-that sometimes works and sometimes doesn't, might might be acceptable to some users.
+that sometimes works and sometimes doesn't, which might be acceptable to some users,
+in some cases.
 
 <h2 id="dependencies">3. Dependencies</h2>
 
@@ -118,18 +119,14 @@ For convenience, you might want to export `BUILD_CMD` if frequently reused
     export BUILD_CMD="./configure --prefix=/usr/local"
     magicmake
 
-The default command to default packages is `sudo apt-get install`,
+The default command to install packages is `sudo apt install`,
 and can be overridden via the `INSTALL_CMD` environment variable
-
-To do a dry-run, set it to `echo`, showing the packages that would have been installed.
-
-    INSTALL_CMD="echo" magicmake
 
 To run non-interactively and blindly automatically install all missing packages, pass the `-y` option.
 
     magicmake -y
 
-In addition, to also answer **Yes** to all apt prompts, add the `-y` option also to the install command.
+In addition, to also answer **Yes** to all apt prompts:
 
     INSTALL_CMD="sudo apt-get -y install" magicmake -y
 
@@ -210,7 +207,7 @@ Below are few examples of the full console log of using `magicmake` to install a
     0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
     Need to get 0 B/51.3 kB of archives.
     After this operation, 229 kB of additional disk space will be used.
-    Do you want to continue? [Y/n]
+    Do you want to continue? [Y/n] y
     Selecting previously unselected package liburiparser1:amd64.
     (Reading database ... 83229 files and directories currently installed.)
     Preparing to unpack .../liburiparser1_0.9.3-2_amd64.deb ...
@@ -319,12 +316,14 @@ The command below shows an example of the ten shortest such cases.
 To import these text files into [PostgreSQL], we need to do some preprocessing,
 using [Python]'s [rsplit()] method. The below line is from [update_file_packages.py]:
 
-    cols = line.rsplit(maxsplit=1)
+```python
+cols = line.rsplit(maxsplit=1)
+```
 
 This consumes only the first sequence of white space character(s) from the right,
 which effectively splits such lines into two columns, as desired.
 
-If readers know of a simpler and efficient way to do this without using Python,
+If readers know of a simpler as efficient way to do this without using Python,
 using only standard commands such as `awk`, `sed` or `cut`, please let me know.
 
 <h3 id="file-packages">magicmake.file_packages table</h3>
@@ -340,7 +339,7 @@ packages text NOT NULL
 ```
 
 The [update_file_packages.py] command only needs to be run once upon installation,
-but can subsequently be run again to update `magicmake.file_packages`,
+but can subsequently be run again to update [magicmake.file_packages],
 after running `apt-file update` to update the `*.lz4` files on disk.
 
 After import, [update_file_packages.py] adds a [btree] index on `file_name`.
@@ -355,8 +354,10 @@ CREATE INDEX ON magicmake.file_packages (file_name);
 which will be read by the PostgreSQL's function `magicmake.suggest_packages()`.
 The file is made readable by any user to allow PostgreSQL to read it.
 
-    STRACE_FILE=$(mktemp)
-    chmod o+r $STRACE_FILE
+```bash
+STRACE_FILE=$(mktemp)
+chmod o+r $STRACE_FILE
+```
 
 `magicmake` will run the build and install commands in a loop,
 until no more packages to install can be found.
@@ -425,7 +426,7 @@ INSERT INTO magicmake.strace
 SELECT
   log_line_text
 FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line_text
-WHERE log_line_text ~ '^(?:\d+ )?[a-z]+\(';
+WHERE log_line_text ~ '^(?:\d+ +)?[a-z]+\(';
 ```
 
 The strace log file is splitted on newlines and only lines matching a regex to filter out possible file syscalls are imported.
