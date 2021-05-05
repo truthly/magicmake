@@ -10,13 +10,13 @@
       1. [https://github.com/petere/pguri.git]
 1. [Implementation](#implementation)
       1. [/var/lib/apt/lists]
-      1. [update_file_packages.py]
+      1. [update_file_packages.sh]
       1. [magicmake.file_packages table]
       1. [magicmake command]
       1. [magicmake.suggest_packages(strace_log_file_path text)]
 
 [/var/lib/apt/lists]: #apt-lists
-[update_file_packages.py]: #update-file-packages
+[update_file_packages.sh]: #update-file-packages
 [magicmake.file_packages table]: #file-packages
 [magicmake command]: #magicmake-command
 [magicmake.suggest_packages(strace_log_file_path text)]: #suggest-packages
@@ -63,7 +63,6 @@ but as the author is only using Ubuntu, no effort has been made to port it to ot
 
   - Ubuntu 20.04.2 LTS *(might work with other versions, but not tested)*
   - apt-file
-  - Python3
   - PostgreSQL
 
 <h2 id="installation">4. Installation</h2>
@@ -71,7 +70,7 @@ but as the author is only using Ubuntu, no effort has been made to port it to ot
 Install dependencies:
 
     sudo apt-get update
-    sudo apt-get install -y postgresql postgresql-server-dev-12 build-essential python3 apt-file
+    sudo apt-get install -y postgresql postgresql-server-dev-12 build-essential apt-file
     sudo apt-file update
 
 Create a PostgreSQL database for your user, if you don't have one already.
@@ -87,7 +86,7 @@ Install magicmake:
     sudo make install
     make installcheck
     psql -c "CREATE EXTENSION magicmake"
-    ./update_file_packages.py | psql
+    ./update_file_packages.sh | psql
     sudo ln -s "`pg_config --bindir`/magicmake" /usr/local/bin/
 
 <h2 id="usage">5. Usage</h2>
@@ -312,20 +311,32 @@ The command below shows an example of the ten shortest such cases.
     usr/share/muse/themes/Light Theme.cfg         universe/sound/muse
     usr/share/higan/Game Boy.sys/boot.rom         universe/games/higan
 
-<h3 id="update-file-packages">update_file_packages.py</h3>
+<h3 id="update-file-packages">update_file_packages.sh</h3>
 
 To import these text files into [PostgreSQL], we need to do some preprocessing,
-using [Python]'s [rsplit()] method. The below line is from [update_file_packages.py]:
+using `awk`, handled by the script [update_file_packages.sh] shown in full below.
 
-```py
-cols = line.rsplit(maxsplit=1)
+```sh
+#!/bin/sh
+cat <<EOF
+BEGIN;
+DROP INDEX IF EXISTS magicmake.file_packages_file_name;
+TRUNCATE magicmake.file_packages;
+\echo 'Please wait, this might take several minutes...'
+EOF
+for apt_list in /var/lib/apt/lists/*.lz4
+do
+  echo "\\\echo Importing $apt_list..."
+  echo "COPY magicmake.file_packages (file_path, packages) FROM stdin;"
+  lz4 -c $apt_list | awk -F "[ \t]+" '{col=$NF;NF--;print $0 "\t" col}'
+  echo "\."
+done
+echo "CREATE INDEX file_packages_file_name ON magicmake.file_packages (file_name);"
+echo "COMMIT;"
 ```
 
 This consumes only the first sequence of white space character(s) from the right,
 which effectively splits such lines into two columns, as desired.
-
-If readers know of a simpler as efficient way to do this without using Python,
-using only standard commands such as `awk`, `sed` or `cut`, please let me know.
 
 <h3 id="file-packages">magicmake.file_packages table</h3>
 
@@ -333,21 +344,15 @@ The file packages database is loaded into the [magicmake.file_packages] table.
 
 ```sql
 CREATE TABLE magicmake.file_packages (
-file_name text NOT NULL,
 file_path text NOT NULL,
-packages text NOT NULL
+packages text NOT NULL,
+file_name text NOT NULL GENERATED ALWAYS AS (right(file_path,strpos(reverse(file_path),'/')-1)) STORED
 );
 ```
 
-The [update_file_packages.py] command only needs to be run once upon installation,
-but can subsequently be run again to update [magicmake.file_packages],
+The `update_file_packages.sh | psql` command only needs to be run once upon installation,
+but can be run again to update [magicmake.file_packages],
 after running `apt-file update` to update the `*.lz4` files on disk.
-
-After import, [update_file_packages.py] adds a [btree] index on `file_name`.
-
-```sql
-CREATE INDEX ON magicmake.file_packages (file_name);
-```
 
 <h3 id="magicmake-command">magicmake command</h3>
 
@@ -535,8 +540,6 @@ FROM new_missing_packages;
 [apt-file]: https://en.wikipedia.org/wiki/APT_(software)#apt-file
 [PostgreSQL]: https://www.postgresql.org/
 [btree]: https://www.postgresql.org/docs/current/btree-intro.html
-[Python]: https://www.python.org/
-[rsplit()]: https://www.w3schools.com/python/ref_string_rsplit.asp
 [bool_or()]: https://www.postgresql.org/docs/current/functions-aggregate.html#FUNCTIONS-AGGREGATE-TABLE
 [magicmake.suggest_packages()]: https://github.com/truthly/magicmake/blob/master/FUNCTIONS/suggest_packages.sql
 [magicmake.strace]: https://github.com/truthly/magicmake/blob/master/TABLES/strace.sql
