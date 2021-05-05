@@ -16,8 +16,7 @@ INSERT INTO magicmake.strace
   (log_line)
 SELECT
   log_line
-FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line
-WHERE log_line ~ '^(?:\d+ +)?[a-z]+\(';
+FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line;
 --
 -- match the strace rows against file_packages
 --
@@ -25,12 +24,37 @@ RETURN QUERY
 WITH
 missing_files AS
 (
+  --
+  -- guess missing files
+  --
   SELECT
     file_name,
     array_agg(file_path) AS file_paths
   FROM magicmake.strace
   GROUP BY file_name
   HAVING bool_or(missing) AND NOT bool_or(NOT missing)
+  UNION ALL
+  --
+  -- guess missing pkg_config packages
+  --
+  SELECT
+    format('%s.pc', pkg_config_arg) AS file_name,
+    array_agg(DISTINCT format('%s%s.pc', pkg_config_path, pkg_config_arg)) AS file_paths
+  FROM
+  (
+    SELECT
+      pid,
+      regexp_split_to_array((array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL))[1],', ') AS pkg_config_args,
+      array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
+    FROM magicmake.strace
+    GROUP BY pid
+    HAVING array_agg(exit_status) FILTER (WHERE exit_status IS NOT NULL) = ARRAY[1]
+    AND cardinality(array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL)) = 1
+  ) AS pkg_config_rows_per_pid
+  CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
+  CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
+  JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg ON pkg_config_arg ~ '^[^-][^-]?'
+  GROUP BY 1
 ),
 missing_packages AS
 (
