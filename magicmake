@@ -6,7 +6,7 @@ usage() { echo "Usage: $0 [-y] [-q] [build_command [build_arguments]]" 1>&2; exi
 
 prompt=1
 quiet=0
-while getopts y:q opt
+while getopts yq opt
 do
   case "$opt" in
     y)
@@ -102,7 +102,16 @@ do
     fi
     if [ $install = 1 ]
     then
-      $MAGICMAKE_INSTALL_CMD $package
+      #
+      # cannot be quiet unless non-interactive since the build command´
+      # might display prompts otherwise
+      #
+      if [ $quiet = 1 ] && [ $prompt = 0 ]
+      then
+        $MAGICMAKE_INSTALL_CMD $package &>/dev/null
+      else
+        $MAGICMAKE_INSTALL_CMD $package
+      fi
     fi
   done
   if [ $count = 0 ]
