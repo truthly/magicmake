@@ -42,7 +42,14 @@ then
   fi
 fi
 
-strace_log_file=$(mktemp)
+strace_log_dir=$(mktemp -d)
+strace_log_file="$strace_log_dir/strace.log"
+
+#
+# allow read permissions to anyone on
+# so that the PostgreSQL function can read it
+#
+chmod o+rx "$strace_log_dir"
 #
 # show an ANSI colored "[magicmake]" console log line prefix
 # to make it visually easier to identify messages from magicmake
@@ -63,60 +70,53 @@ do
   else
     strace -e trace=%file,%process -o $strace_log_file -ff $MAGICMAKE_BUILD_CMD
   fi
+  chmod o+r "$strace_log_file".*
   #
-  # allow read permissions to anyone on
-  # the strace_log_file so that the PostgreSQL
-  # function can read it
+  # since build tools look for files at different paths,
+  # the same file_name might at first be missing at some path(s)
+  # but then eventually be found at some other path
   #
-  chmod o+r $strace_log_file.*
-  for pid_file in $strace_log_file.*
+  # to determine what file_names are truly missing,
+  # the magicmake.suggest_packages() PostgreSQL function
+  # will compute the set of file_names missing at path(s)
+  # except the file_names that were found at some path(s)
+  #
+  # magicmake.suggest_packages() returns a list of packages to install
+  # or no rows if no packages to install could be found
+  #
+  count=0
+  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_dir')")
   do
-    #
-    # since build tools look for files at different paths,
-    # the same file_name might at first be missing at some path(s)
-    # but then eventually be found at some other path
-    #
-    # to determine what file_names are truly missing,
-    # the magicmake.suggest_packages() PostgreSQL function
-    # will compute the set of file_names missing at path(s)
-    # except the file_names that were found at some path(s)
-    #
-    # magicmake.suggest_packages() returns a list of packages to install
-    # or no rows if no packages to install could be found
-    #
-    count=0
-    for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_file')")
-    do
-      count=$((count+1))
-      install=0
-      if [ $prompt = 0 ]
+    count=$((count+1))
+    install=0
+    if [ $prompt = 0 ]
+    then
+      echo "$LOG_PREFIX installing [37;1m$package[0m"
+      install=1
+    else
+      read -p "$LOG_PREFIX do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
+      if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
       then
-        echo "$LOG_PREFIX installing [37;1m$package[0m"
         install=1
       else
-        read -p "$LOG_PREFIX do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
-        if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
-        then
-          install=1
-        else
-          install=0
-        fi
+        install=0
       fi
-      if [ $install = 1 ]
+    fi
+    if [ $install = 1 ]
+    then
+      #
+      # cannot be quiet unless non-interactive since the build command´
+      # might display prompts otherwise
+      #
+      if [ $quiet = 1 ] && [ $prompt = 0 ]
       then
-        #
-        # cannot be quiet unless non-interactive since the build command´
-        # might display prompts otherwise
-        #
-        if [ $quiet = 1 ] && [ $prompt = 0 ]
-        then
-          $MAGICMAKE_INSTALL_CMD $package &>/dev/null
-        else
-          $MAGICMAKE_INSTALL_CMD $package
-        fi
+        $MAGICMAKE_INSTALL_CMD $package &>/dev/null
+      else
+        $MAGICMAKE_INSTALL_CMD $package
       fi
-    done
+    fi
   done
+  rm -f "$strace_log_file".*
   if [ $count = 0 ]
   then
     echo "$LOG_PREFIX no more packages to install ✅"
@@ -126,4 +126,4 @@ done
 #
 # the temporary strace file is removed at the end
 #
-rm -f $strace_log_file $strace_log_file.*
+rm -rf "$strace_log_dir"
