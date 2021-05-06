@@ -12,7 +12,7 @@ LOOP
   --
   -- truncate the magicmake.strace table before importing
   --
-  TRUNCATE magicmake.strace;
+  TRUNCATE magicmake.strace, magicmake.missing_files;
   --
   -- parse the strace output by splitting at newlines
   -- and filtering out lines that looks like syscalls
@@ -23,62 +23,62 @@ LOOP
     log_line
   FROM regexp_split_to_table(pg_read_file(format('%s/%s',strace_log_dir,strace_log_file_path)),E'\n') AS log_line;
   --
+  -- guess missing files
+  --
+  INSERT INTO magicmake.missing_files
+    (file_name, file_paths)
+  SELECT
+    file_name,
+    array_agg(DISTINCT file_path) AS file_paths
+  FROM magicmake.strace
+  GROUP BY file_name
+  HAVING bool_or(missing) AND NOT bool_or(NOT missing)
+  UNION ALL
+  --
+  -- guess missing pkg_config packages
+  --
+  SELECT
+    format('%s.pc', pkg_config_name) AS file_name,
+    array_agg(DISTINCT format('%s%s.pc', pkg_config_path, pkg_config_name)) AS file_paths
+  FROM
+  (
+    SELECT
+      regexp_split_to_array(pkg_config_exec[1],', ') AS pkg_config_args,
+      pkg_config_paths
+    FROM
+    (
+      SELECT
+        array_agg(exit_status) FILTER (WHERE exit_status IS NOT NULL) AS exit_statuses,
+        array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL) AS pkg_config_exec,
+        array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
+      FROM magicmake.strace
+    ) AS filter_agg_pkg_config
+    WHERE
+    --
+    -- find pkg_config calls...
+    --
+      cardinality(pkg_config_exec) = 1
+    AND
+    --
+    -- ...that exited with status 1...
+    --
+      exit_statuses = ARRAY[1]
+    --
+    -- ...possibly meaning a package was missing
+    --
+  ) AS pkg_config_rows
+  CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
+  CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
+  JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg
+    ON pkg_config_arg ~ '^[^-][^-]?' -- ignore arguments that look like long options, e.g. --print-errors
+  CROSS JOIN regexp_split_to_table(pkg_config_arg,' ') AS pkg_config_name
+  GROUP BY 1
+  ;
+  --
   -- match the strace rows against file_packages
   --
   RETURN QUERY
   WITH
-  missing_files AS
-  (
-    --
-    -- guess missing files
-    --
-    SELECT
-      file_name,
-      array_agg(DISTINCT file_path) AS file_paths
-    FROM magicmake.strace
-    GROUP BY file_name
-    HAVING bool_or(missing) AND NOT bool_or(NOT missing)
-    UNION ALL
-    --
-    -- guess missing pkg_config packages
-    --
-    SELECT
-      format('%s.pc', pkg_config_name) AS file_name,
-      array_agg(DISTINCT format('%s%s.pc', pkg_config_path, pkg_config_name)) AS file_paths
-    FROM
-    (
-      SELECT
-        regexp_split_to_array(pkg_config_exec[1],', ') AS pkg_config_args,
-        pkg_config_paths
-      FROM
-      (
-        SELECT
-          array_agg(exit_status) FILTER (WHERE exit_status IS NOT NULL) AS exit_statuses,
-          array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL) AS pkg_config_exec,
-          array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
-        FROM magicmake.strace
-      ) AS filter_agg_pkg_config
-      WHERE
-      --
-      -- find pkg_config calls...
-      --
-        cardinality(pkg_config_exec) = 1
-      AND
-      --
-      -- ...that exited with status 1...
-      --
-        exit_statuses = ARRAY[1]
-      --
-      -- ...possibly meaning a package was missing
-      --
-    ) AS pkg_config_rows
-    CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
-    CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
-    JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg
-      ON pkg_config_arg ~ '^[^-][^-]?' -- ignore arguments that look like long options, e.g. --print-errors
-    CROSS JOIN regexp_split_to_table(pkg_config_arg,' ') AS pkg_config_name
-    GROUP BY 1
-  ),
   missing_packages AS
   (
     SELECT
@@ -96,7 +96,7 @@ LOOP
         '\1'
       ) AS package,
       array_agg(file_packages.file_path) AS file_paths
-    FROM missing_files
+    FROM magicmake.missing_files
     JOIN magicmake.file_packages
       ON file_packages.file_name = missing_files.file_name
     AND file_packages.file_path = ANY(missing_files.file_paths)

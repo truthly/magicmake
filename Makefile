@@ -17,6 +17,7 @@ SQL_SRC = \
   header.sql \
 	TABLES/file_packages.sql \
 	TABLES/strace.sql \
+	TABLES/missing_files.sql \
 	TABLES/suggested_packages.sql \
 	FUNCTIONS/suggest_packages.sql \
 	footer.sql
