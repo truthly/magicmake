@@ -98,7 +98,49 @@ missing_packages AS
   AND file_packages.file_path = ANY(missing_files.file_paths)
   GROUP BY 1
 ),
-new_missing_packages AS
+extract_versions AS
+(
+  SELECT
+    package,
+    file_paths,
+    substring(package from '^(.*?)[.0-9-]*$') AS name_part,
+    array_remove
+    (
+      regexp_split_to_array
+      (
+        regexp_replace
+        (
+          package,
+          '[^0-9.-]+',
+          '',
+          'g'
+        ),
+        '[-.]'
+      ),
+      ''
+    )::int[] AS version_part
+  FROM missing_packages
+),
+prioritize_versions AS
+(
+  SELECT
+    package,
+    file_paths,
+    ROW_NUMBER() OVER (
+      PARTITION BY name_part
+      --
+      -- prefer packages with no explicit version
+      -- which seems to usually be the latest version
+      --
+      ORDER BY cardinality(version_part) = 0 DESC,
+      --
+      -- otherwise, pick the one with the highest version
+      --
+      version_part DESC
+    ) AS priority
+  FROM extract_versions
+),
+suggest_new_packages AS
 (
   --
   -- remember what packages have been suggested
@@ -109,16 +151,17 @@ new_missing_packages AS
     (package, file_paths)
   SELECT
     package, file_paths
-  FROM missing_packages
-  WHERE NOT EXISTS
+  FROM prioritize_versions
+  WHERE priority = 1
+  AND NOT EXISTS
   (
     SELECT 1 FROM magicmake.suggested_packages
-    WHERE suggested_packages.package = missing_packages.package
+    WHERE suggested_packages.package = prioritize_versions.package
   )
   RETURNING package
 )
 SELECT
   package
-FROM new_missing_packages;
+FROM suggest_new_packages;
 END
 $$;
