@@ -52,7 +52,6 @@ missing_files AS
         array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL) AS pkg_config_exec,
         array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
       FROM magicmake.strace
-      GROUP BY pid
     ) AS filter_agg_pkg_config
     WHERE
     --
@@ -67,7 +66,7 @@ missing_files AS
     --
     -- ...possibly meaning a package was missing
     --
-  ) AS pkg_config_rows_per_pid
+  ) AS pkg_config_rows
   CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
   CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
   JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg
