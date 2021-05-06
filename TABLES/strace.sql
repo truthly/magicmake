@@ -9,3 +9,6 @@ pid int GENERATED ALWAYS AS ((regexp_match(log_line,'^(\d+) +'))[1]::int) STORED
 exit_status int GENERATED ALWAYS AS ((regexp_match(log_line,'^\d+ +[+]{3} exited with (\d+) [+]{3}'))[1]::int) STORED,
 PRIMARY KEY (log_line_id)
 );
+
+CREATE INDEX ON magicmake.strace (file_name);
+CREATE INDEX ON magicmake.strace (pid);

@@ -29,7 +29,7 @@ missing_files AS
   --
   SELECT
     file_name,
-    array_agg(file_path) AS file_paths
+    array_agg(DISTINCT file_path) AS file_paths
   FROM magicmake.strace
   GROUP BY file_name
   HAVING bool_or(missing) AND NOT bool_or(NOT missing)
