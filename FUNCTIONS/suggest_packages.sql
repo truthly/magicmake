@@ -21,7 +21,7 @@ LOOP
     (log_line)
   SELECT
     log_line
-  FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line;
+  FROM regexp_split_to_table(pg_read_file(format('%s/%s',strace_log_dir,strace_log_file_path)),E'\n') AS log_line;
   --
   -- match the strace rows against file_packages
   --
