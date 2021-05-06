@@ -32,48 +32,62 @@ LOOP
     array_agg(DISTINCT file_path) AS file_paths
   FROM magicmake.strace
   GROUP BY file_name
-  HAVING bool_or(missing) AND NOT bool_or(NOT missing)
-  UNION ALL
+  HAVING bool_or(missing) AND NOT bool_or(NOT missing);
   --
   -- guess missing pkg_config packages
   --
-  SELECT
-    format('%s.pc', pkg_config_name) AS file_name,
-    array_agg(DISTINCT format('%s%s.pc', pkg_config_path, pkg_config_name)) AS file_paths
-  FROM
+  INSERT INTO magicmake.missing_files
+    (file_name, file_paths)
+  WITH
+  missing_pkg_config AS
   (
     SELECT
-      regexp_split_to_array(pkg_config_exec[1],', ') AS pkg_config_args,
-      pkg_config_paths
+      format('%s.pc', pkg_config_name) AS file_name,
+      array_agg(DISTINCT format('%s%s.pc', pkg_config_path, pkg_config_name)) AS file_paths
     FROM
     (
       SELECT
-        array_agg(exit_status) FILTER (WHERE exit_status IS NOT NULL) AS exit_statuses,
-        array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL) AS pkg_config_exec,
-        array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
-      FROM magicmake.strace
-    ) AS filter_agg_pkg_config
-    WHERE
-    --
-    -- find pkg_config calls...
-    --
-      cardinality(pkg_config_exec) = 1
-    AND
-    --
-    -- ...that exited with status 1...
-    --
-      exit_statuses = ARRAY[1]
-    --
-    -- ...possibly meaning a package was missing
-    --
-  ) AS pkg_config_rows
-  CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
-  CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
-  JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg
-    ON pkg_config_arg ~ '^[^-][^-]?' -- ignore arguments that look like long options, e.g. --print-errors
-  CROSS JOIN regexp_split_to_table(pkg_config_arg,' ') AS pkg_config_name
-  GROUP BY 1
-  ;
+        regexp_split_to_array(pkg_config_exec[1],', ') AS pkg_config_args,
+        pkg_config_paths
+      FROM
+      (
+        SELECT
+          array_agg(exit_status) FILTER (WHERE exit_status IS NOT NULL) AS exit_statuses,
+          array_agg(pkg_config) FILTER (WHERE pkg_config IS NOT NULL) AS pkg_config_exec,
+          array_agg(DISTINCT LEFT(file_path,length(file_path)-length(file_name))) FILTER (WHERE file_name LIKE '%.pc') AS pkg_config_paths
+        FROM magicmake.strace
+      ) AS filter_agg_pkg_config
+      WHERE
+      --
+      -- find pkg_config calls...
+      --
+        cardinality(pkg_config_exec) = 1
+      AND
+      --
+      -- ...that exited with status 1...
+      --
+        exit_statuses = ARRAY[1]
+      --
+      -- ...possibly meaning a package was missing
+      --
+    ) AS pkg_config_rows
+    CROSS JOIN unnest(pkg_config_paths) AS pkg_config_path
+    CROSS JOIN unnest(pkg_config_args) AS pkg_config_arg_quoted
+    JOIN btrim(pkg_config_arg_quoted,'"') AS pkg_config_arg
+      ON pkg_config_arg ~ '^[^-][^-]?' -- ignore arguments that look like long options, e.g. --print-errors
+    CROSS JOIN regexp_split_to_table(pkg_config_arg,' ') AS pkg_config_name
+    GROUP BY 1
+  )
+  SELECT
+    file_name,
+    file_paths
+  FROM missing_pkg_config
+  WHERE NOT EXISTS
+  (
+    SELECT 1 FROM magicmake.missing_files
+    WHERE missing_files.file_name = missing_pkg_config.file_name
+  );
+  ANALYZE magicmake.missing_files;
   --
   -- match the strace rows against file_packages
   --
