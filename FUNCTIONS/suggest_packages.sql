@@ -12,7 +12,7 @@ LOOP
   --
   -- truncate the magicmake.strace table before importing
   --
-  TRUNCATE magicmake.strace, magicmake.missing_files;
+  TRUNCATE magicmake.strace, magicmake.missing_files, magicmake.missing_dirs;
   --
   -- parse the strace output by splitting at newlines
   -- and filtering out lines that looks like syscalls
@@ -89,6 +89,18 @@ LOOP
   );
   ANALYZE magicmake.missing_files;
   --
+  -- guess missing dirs
+  --
+  INSERT INTO magicmake.missing_dirs
+    (dir_path)
+  SELECT DISTINCT
+    file_path
+  FROM magicmake.strace
+  JOIN magicmake.package_dirs
+    ON package_dirs.dir_path = strace.file_path
+  WHERE strace.missing;
+  ANALYZE magicmake.missing_dirs;
+  --
   -- match the strace rows against file_packages
   --
   RETURN QUERY
@@ -102,18 +114,33 @@ LOOP
         -- ignore multiple packages separated by comma,
         -- just pick the first one
         --
-        regexp_replace(file_packages.packages,',.*$',''),
+        regexp_replace(packages,',.*$',''),
         --
         -- extract the package name
         --
         '^.*?([^/]+)$',
         '\1'
       ) AS package,
-      array_agg(file_packages.file_path) AS file_paths
-    FROM magicmake.missing_files
-    JOIN magicmake.file_packages
-      ON file_packages.file_name = missing_files.file_name
-    AND file_packages.file_path = ANY(missing_files.file_paths)
+      array_agg(file_path) AS file_paths
+    FROM
+    (
+      SELECT
+        file_packages.packages,
+        file_packages.file_path
+      FROM magicmake.missing_files
+      JOIN magicmake.file_packages
+        ON file_packages.file_name = missing_files.file_name
+       AND file_packages.file_path = ANY(missing_files.file_paths)
+      UNION
+      SELECT
+        file_packages.packages,
+        file_packages.file_path
+      FROM magicmake.missing_files
+      CROSS JOIN magicmake.missing_dirs
+      JOIN magicmake.file_packages
+        ON file_packages.file_name = missing_files.file_name
+       AND file_packages.file_path = format('%s/%s',missing_dirs.dir_path,missing_files.file_name)
+    ) AS x
     GROUP BY 1
   ),
   extract_versions AS
