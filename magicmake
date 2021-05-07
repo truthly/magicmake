@@ -87,6 +87,11 @@ strace_log_file="$strace_log_dir/strace.log"
 #
 chmod o+rx "$strace_log_dir"
 #
+# build a list of all installed packages
+# to be displayed at the end
+#
+installed_packages=""
+#
 # loop until there are no more packages to install
 #
 while true;
@@ -116,7 +121,6 @@ do
   # or no rows if no packages to install could be found
   #
   count=0
-  installed_packages=""
   for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_dir')")
   do
     count=$((count+1))
