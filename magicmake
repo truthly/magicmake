@@ -2,7 +2,7 @@
 #
 # 🪄🤖 magicmake - auto-install missing packages required when building from source
 #
-usage() { echo "Usage: $0 [-y] [-q] [build_command [build_arguments]]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-y] [-q] [-h] [build_command [build_arguments]]" 1>&2; exit 1; }
 
 prompt=1
 quiet=0
@@ -14,6 +14,9 @@ do
       ;;
     q)
       quiet=1
+      ;;
+    h)
+      usage
       ;;
     *)
       usage
