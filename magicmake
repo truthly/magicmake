@@ -1,8 +1,26 @@
 #!/bin/bash
 #
-# 🪄🤖 magicmake - auto-install missing packages required when building from source
+# console_msg_prefix is "🪄 🤖 [magicmake]:" written in ANSI colors
+# to make it visually easier to identify messages from magicmake
 #
-usage() { echo "Usage: $0 [-y] [-q] [-h] [build_command [build_arguments]]" 1>&2; exit 1; }
+console_msg_prefix="🪄 🤖 [38;5;39mm[38;5;48ma[38;5;154mg[38;5;208mi[38;5;199mc[38;5;93mm[38;5;33ma[38;5;49mk[38;5;118me[0m:"
+usage() {
+  cat 1>&2 <<USAGE
+$console_msg_prefix detect and install missing packages, required when building a project from source
+
+Usage:
+  [1mmagicmake[0m [[1m-yqhlc[0m] [build_command [build_arguments]]
+
+Options:
+  [1m-y[0m  assume "yes" as an answer to all prompts and run non-interactively
+  [1m-q[0m  run quietly; suppress output from build and package install commands
+  [1m-h[0m  show this help, then exit
+  [1m-l[0m  show list of packages suggested
+  [1m-c[0m  clear list of packages suggested
+
+USAGE
+  exit 1
+}
 
 prompt=1
 quiet=0
@@ -17,6 +35,16 @@ do
       ;;
     h)
       usage
+      ;;
+    l)
+      suggested_packages=$(psql -X -t -A -c "SELECT string_agg(package, ' ') FROM magicmake.suggested_packages")
+      echo "$console_msg_prefix suggested packages: [37;1m$suggested_packages[0m"
+      exit 0
+      ;;
+    c)
+      psql -Xqc "TRUNCATE magicmake.suggested_packages" && \
+      echo "$console_msg_prefix cleared list of suggested packages ✅"
+      exit 0
       ;;
     *)
       usage
@@ -54,11 +82,6 @@ strace_log_file="$strace_log_dir/strace.log"
 #
 chmod o+rx "$strace_log_dir"
 #
-# show an ANSI colored "[magicmake]" console log line prefix
-# to make it visually easier to identify messages from magicmake
-#
-LOG_PREFIX="🪄 🤖 [38;5;39mm[38;5;48ma[38;5;154mg[38;5;208mi[38;5;199mc[38;5;93mm[38;5;33ma[38;5;49mk[38;5;118me[0m:"
-#
 # loop until there are no more packages to install
 #
 while true;
@@ -88,16 +111,17 @@ do
   # or no rows if no packages to install could be found
   #
   count=0
+  installed_packages=""
   for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_dir')")
   do
     count=$((count+1))
     install=0
     if [ $prompt = 0 ]
     then
-      echo "$LOG_PREFIX installing [37;1m$package[0m"
+      echo "$console_msg_prefix installing [37;1m$package[0m"
       install=1
     else
-      read -p "$LOG_PREFIX do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
+      read -p "$console_msg_prefix do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
       if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
       then
         install=1
@@ -117,12 +141,17 @@ do
       else
         $MAGICMAKE_INSTALL_CMD $package
       fi
+      installed_packages+=" $package"
     fi
   done
   rm -f "$strace_log_file".*
   if [ $count = 0 ]
   then
-    echo "$LOG_PREFIX no more packages to install ✅"
+    echo "$console_msg_prefix no more packages to install ✅"
+    if [ ! -z "$installed_packages" ]
+    then
+      echo "installed: [37;1m$installed_packages[0m"
+    fi
     break
   fi
 done

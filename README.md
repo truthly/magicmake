@@ -1,33 +1,85 @@
 <h1 id="top">🪄🤖<code>magicmake</code></h1>
 
 1. [About](#about)
+1. [Usage](#usage)
+      1. [Options](#options)
+      1. [Examples](#examples)
 1. [Rationale](#rationale)
 1. [Dependencies](#dependencies)
 1. [Installation](#installation)
-1. [Usage](#usage)
-1. [Examples](#examples)
-      1. [https://github.com/pramsey/pgsql-http.git]
-      1. [https://github.com/petere/pguri.git]
+1. [Demo](#demo)
+      1. [https://github.com/pramsey/pgsql-http.git](#pgsql-http)
+      1. [https://github.com/petere/pguri.git](#pguri)
 1. [Implementation](#implementation)
-      1. [/var/lib/apt/lists]
-      1. [update_file_packages.sh]
-      1. [magicmake.file_packages table]
-      1. [magicmake command]
-      1. [magicmake.suggest_packages(strace_log_file_path text)]
-
-[/var/lib/apt/lists]: #apt-lists
-[update_file_packages.sh]: #update-file-packages
-[magicmake.file_packages table]: #file-packages
-[magicmake command]: #magicmake-command
-[magicmake.suggest_packages(strace_log_file_path text)]: #suggest-packages
-[https://github.com/pramsey/pgsql-http.git]: #pgsql-http
-[https://github.com/petere/pguri.git]: #pguri
+      1. [/var/lib/apt/lists](#apt-lists)
+      1. [update_file_packages.sh](#update-file-packages)
+      1. [magicmake.file_packages](#file-packages)
+      1. [magicmake command](#magicmake-command)
+      1. [magicmake.suggest_packages(strace_log_file_path text)](#suggest-packages)
 
 <h2 id="about">1. About</h2>
 
-`magicmake` is a command line tool to auto-install all missing packages required to build a project from source.
+**magicmake** is a command line tool to detect and install missing packages, required when building a project from source
 
-<h2 id="rationale">2. Rationale</h2>
+<h2 id="usage">2. Usage</h2>
+
+**magicmake** \[**-yqhlc**\] \[*build_command* \[*build_arguments*\]\]
+
+<h3 id="options">Options</h3>
+
+|      |                                                                            |
+|----- | -------------------------------------------------------------------------- |
+|**-y**| assume **y** (*yes*) as an answer to all prompts and run non-interactively |
+|**-q**| run quietly; suppress output from build and package install commands       |
+|**-h**| show this help, then exit                                                  |
+|**-l**| show list of suggested packages                                            |
+|**-c**| clear list of suggested packages                                           |
+
+The default *build_command* is **make** with no *build_arguments*.
+It can be overriden either by passing argument(s) to magicmake,
+or setting the **MAGICMAKE_BUILD_CMD** environment variable.
+
+When a missing package is detected by magicmake,
+it will prompt the user asking if the package should be installed.
+
+The default package installation command is **sudo apt install**,
+except when using **-y** which changes it to **sudo apt-get -y install**.
+To override, set the **MAGICMAKE_INSTALL_CMD** environment variable.
+
+A package will only be suggested by magicmake once,
+by remembering what packages have been suggested so far.
+
+If by mistake answering **n** (*no*) when a missing package was suggested,
+use **magicmake -c** to clear the list and rerun.
+
+<h3 id="examples">Examples</h3>
+
+Calling `magicmake` with no arguments will invoke `make`:
+
+    magicmake
+
+Which is the same thing as doing:
+
+    magicmake make
+
+To invoke some other *build_command*, pass it as an argument:
+
+    magicmake ./configure
+
+The *build_command* is invoked with all the *build_arguments*:
+
+    magicmake ./configure --prefix=/usr/local
+
+The *build_command* can also be set via the **MAGICMAKE_BUILD_CMD** environment variable:
+
+    MAGICMAKE_BUILD_CMD="./configure --prefix=/usr/local" magicmake
+
+For convenience, you might want to export **MAGICMAKE_BUILD_CMD** if frequently reused:
+
+    export MAGICMAKE_BUILD_CMD="./configure --prefix=/usr/local"
+    magicmake
+
+<h2 id="rationale">3. Rationale</h2>
 
 It is sometimes necessary to install a project from source,
 when it's not included in the distribution's package management system.
@@ -56,7 +108,7 @@ when really insisting on trying to automate the process,
 that sometimes works and sometimes doesn't, which might be acceptable to some users,
 in some cases.
 
-<h2 id="dependencies">3. Dependencies</h2>
+<h2 id="dependencies">4. Dependencies</h2>
 
 `magicmake` currently only works for Ubuntu. The concept is probably compatible with other distros,
 but as the author is only using Ubuntu, no effort has been made to port it to other distros.
@@ -65,7 +117,7 @@ but as the author is only using Ubuntu, no effort has been made to port it to ot
   - apt-file
   - PostgreSQL
 
-<h2 id="installation">4. Installation</h2>
+<h2 id="installation">5. Installation</h2>
 
 Install dependencies:
 
@@ -89,57 +141,7 @@ Install magicmake:
     ./update_file_packages.sh | psql
     sudo ln -s "`pg_config --bindir`/magicmake" /usr/local/bin/
 
-<h2 id="usage">5. Usage</h2>
-
-    magicmake [-y] [-q] [build_command [build_arguments]]
-
-Calling `magicmake` with no arguments will invoke `make`
-
-    magicmake
-
-This is the same thing as
-
-    magicmake make
-
-To invoke some other `build_command`, pass it as an argument to `magicmake`
-
-    magicmake ./configure
-
-The `build_command` is invoked with all the `build_arguments`, if any
-
-    magicmake ./configure --prefix=/usr/local
-
-The `build_command` can also be set via the `MAGICMAKE_BUILD_CMD` environment variable
-
-    MAGICMAKE_BUILD_CMD="./configure --prefix=/usr/local" magicmake
-
-For convenience, you might want to export `MAGICMAKE_BUILD_CMD` if frequently reused
-
-    export MAGICMAKE_BUILD_CMD="./configure --prefix=/usr/local"
-    magicmake
-
-The default command to install packages is `sudo apt install`,
-and can be overridden via the `MAGICMAKE_INSTALL_CMD` environment variable
-
-To run non-interactively and blindly automatically install all missing packages, pass the `-y` option.
-This will also change `MAGICMAKE_INSTALL_CMD` to `sudo apt-get -y install` which will answer **Yes** to all apt prompts.
-
-    magicmake -y
-
-To suppress all output from the `MAGICMAKE_BUILD_CMD`, pass the `-q` option.
-
-    magicmake -q
-
-`magicmake` will remember what packages have been suggested, to avoid spamming the user with the same suggestions over and over again.
-Each package is only suggested once. If answering **No*** when prompted, the same package will not be suggested again, even if
-it's still missing and needed later when building some other project using `magicmake`.
-
-To clear `magicmake`'s memory, causing any missing packages to be suggested again, even though they have been suggested before,
-`TRUNCATE` the [magicmake.suggested_packages] table:
-
-    psql -c "TRUNCATE magicmake.suggested_packages"
-
-<h2 id="examples">6. Examples</h2>
+<h2 id="demo">6. Demo</h2>
 
 Personally, I'm mostly using `magicmake` to automate the process of building PostgreSQL extensions,
 out of which many are not available as Ubuntu packages.
@@ -381,7 +383,7 @@ do
     then
       install=1
     else
-      read -p "$LOG_PREFIX Do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
+      read -p "$console_msg_prefix Do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
       if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
       then
         install=1
@@ -396,7 +398,7 @@ do
   done
   if [ $count = 0 ]
   then
-    echo "$LOG_PREFIX no more packages to install ✅"
+    echo "$console_msg_prefix no more packages to install ✅"
     break
   fi
 done
