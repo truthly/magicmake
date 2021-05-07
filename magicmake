@@ -6,7 +6,7 @@ usage() { echo "Usage: $0 [-y] [-q] [-h] [build_command [build_arguments]]" 1>&2
 
 prompt=1
 quiet=0
-while getopts yq opt
+while getopts yqh opt
 do
   case "$opt" in
     y)
