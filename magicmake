@@ -38,7 +38,12 @@ do
       ;;
     l)
       suggested_packages=$(psql -X -t -A -c "SELECT string_agg(package, ' ') FROM magicmake.suggested_packages")
-      echo "$console_msg_prefix suggested packages: [37;1m$suggested_packages[0m"
+      if [ -z "$suggested_packages" ]
+      then
+        echo "$console_msg_prefix no suggested packages"
+      else
+        echo "$console_msg_prefix suggested packages: [37;1m$suggested_packages[0m"
+      fi
       exit 0
       ;;
     c)
