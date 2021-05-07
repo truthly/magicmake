@@ -19,7 +19,7 @@
 
 <h2 id="about">1. About</h2>
 
-**magicmake** is a command line tool to detect and install missing packages, required when building a project from source
+**magicmake**: detect and install missing packages, required when building a project from source
 
 <h2 id="usage">2. Usage</h2>
 
