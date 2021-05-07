@@ -6,7 +6,7 @@
 console_msg_prefix="🪄 🤖 [38;5;39mm[38;5;48ma[38;5;154mg[38;5;208mi[38;5;199mc[38;5;93mm[38;5;33ma[38;5;49mk[38;5;118me[0m:"
 usage() {
   cat 1>&2 <<USAGE
-$console_msg_prefix detect and install missing packages, required when building a project from source
+$console_msg_prefix detect and install missing packages when building from source
 
 Usage:
   [1mmagicmake[0m [[1m-yqhlc[0m] [build_command [build_arguments]]
