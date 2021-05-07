@@ -24,7 +24,7 @@ USAGE
 
 prompt=1
 quiet=0
-while getopts yqh opt
+while getopts yqhlc opt
 do
   case "$opt" in
     y)
