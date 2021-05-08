@@ -19,7 +19,7 @@
 
 <h2 id="about">1. About</h2>
 
-**magicmake**: detect and install missing packages when building from source
+**magicmake**: auto-install missing packages when building from source
 
 ![magicmake demo](https://github.com/truthly/demos/blob/master/magicmake/postgresql.gif "Demo showing magicmake running PostgreSQL's ./configure")
 
@@ -27,7 +27,7 @@ In the example above, PostgreSQL is built from source:
 
     magicmake ./configure --prefix="$HOME/pg-head"
 
-`magicmake` runs `./configure` in a loop until, until no more packages to install can be detected.
+`magicmake` runs the build command in a loop until, until no more packages to install can be detected.
 
 Finally, it outputs a list of suggested packages and which one the user selected to install or not:
 
