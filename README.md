@@ -449,6 +449,8 @@ do
         $MAGICMAKE_INSTALL_CMD $package
       fi
       installed_packages+=" $package"
+    else
+      not_installed_packages+=" $package"
     fi
   done
   rm -f "$strace_log_file".*
@@ -458,6 +460,10 @@ do
     if [ ! -z "$installed_packages" ]
     then
       echo "installed: [37;1m$installed_packages[0m"
+    fi
+    if [ ! -z "$not_installed_packages" ]
+    then
+      echo "not installed: [37;1m$not_installed_packages[0m"
     fi
     break
   fi
