@@ -15,11 +15,27 @@
       1. [update_file_packages.sh](#update-file-packages)
       1. [magicmake.file_packages](#file-packages)
       1. [magicmake command](#magicmake-command)
-      1. [magicmake.suggest_packages(strace_log_file_path text)](#suggest-packages)
+      1. [magicmake.suggest_packages(strace_log_dir text)](#suggest-packages)
 
 <h2 id="about">1. About</h2>
 
 **magicmake**: detect and install missing packages when building from source
+
+![magicmake demo](https://github.com/truthly/demos/blob/master/magicmake/postgresql.gif "Demo showing magicmake running PostgreSQL's ./configure")
+
+In the example above, PostgreSQL is built from source:
+
+    magicmake ./configure --prefix="$HOME/pg-head"
+
+`magicmake` runs `./configure` in a loop until, until no more packages to install can be detected.
+
+Finally, it outputs a list of suggested packages and which one the user selected to install or not:
+
+    🪄 🤖 magicmake: no more packages to install ✅
+    installed:  libreadline-dev liblog-agent-perl bison flex pkg-config zlib1g-dev libxml2-utils xsltproc
+    not installed:  libedit-dev dbtoepub fop
+
+The next step in the build process is to run `make`, not included in this demo.
 
 <h2 id="usage">2. Usage</h2>
 
@@ -143,16 +159,20 @@ Install magicmake:
 
 <h2 id="demo">6. Demo</h2>
 
-Personally, I'm mostly using `magicmake` to automate the process of building PostgreSQL extensions,
-out of which many are not available as Ubuntu packages.
-
-Below are few examples of the full console log of using `magicmake` to install a few PostgreSQL extensions.
+Below are a few examples of using `magicmake` to build various projects.
 
 <h3 id="pgsql-http">https://github.com/pramsey/pgsql-http.git</h3>
 
-    $ git clone https://github.com/pramsey/pgsql-http.git
-    $ cd pgsql-http
-    $ magicmake
+    magicmake@ubuntu:~$ git clone https://github.com/pramsey/pgsql-http.git
+    Cloning into 'pgsql-http'...
+    remote: Enumerating objects: 850, done.
+    remote: Counting objects: 100% (52/52), done.
+    remote: Compressing objects: 100% (34/34), done.
+    remote: Total 850 (delta 24), reused 32 (delta 12), pack-reused 798
+    Receiving objects: 100% (850/850), 253.31 KiB | 287.00 KiB/s, done.
+    Resolving deltas: 100% (521/521), done.
+    magicmake@ubuntu:~$ cd pgsql-http/
+    magicmake@ubuntu:~/pgsql-http$ magicmake
     make: curl-config: Command not found
     gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o http.o http.c
     http.c:72:10: fatal error: curl/curl.h: No such file or directory
@@ -160,19 +180,22 @@ Below are few examples of the full console log of using `magicmake` to install a
           |          ^~~~~~~~~~~~~
     compilation terminated.
     make: *** [<builtin>: http.o] Error 1
-    🪄 🤖 magicmake: Do you want to install libcurl4-gnutls-dev? [Y/n] y
+    🪄 🤖 magicmake: do you want to install libcurl4-gnutls-dev? [Y/n]
+    [sudo] password for magicmake:
     Reading package lists... Done
     Building dependency tree
     Reading state information... Done
     Suggested packages:
-      libcurl4-doc libgnutls28-dev libidn11-dev libkrb5-dev libldap2-dev librtmp-dev libssh2-1-dev pkg-config zlib1g-dev
+      libcurl4-doc librtmp-dev libssh2-1-dev
     The following NEW packages will be installed:
       libcurl4-gnutls-dev
-    0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
-    Need to get 0 B/318 kB of archives.
+    0 upgraded, 1 newly installed, 0 to remove and 13 not upgraded.
+    Need to get 318 kB of archives.
     After this operation, 1526 kB of additional disk space will be used.
+    Get:1 http://se.archive.ubuntu.com/ubuntu focal-updates/main amd64 libcurl4-gnutls-dev amd64 7.68.0-1ubuntu2.5 [318 kB]
+    Fetched 318 kB in 0s (2679 kB/s)
     Selecting previously unselected package libcurl4-gnutls-dev:amd64.
-    (Reading database ... 83204 files and directories currently installed.)
+    (Reading database ... 92359 files and directories currently installed.)
     Preparing to unpack .../libcurl4-gnutls-dev_7.68.0-1ubuntu2.5_amd64.deb ...
     Unpacking libcurl4-gnutls-dev:amd64 (7.68.0-1ubuntu2.5) ...
     Setting up libcurl4-gnutls-dev:amd64 (7.68.0-1ubuntu2.5) ...
@@ -180,25 +203,45 @@ Below are few examples of the full console log of using `magicmake` to install a
     gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o http.o http.c
     gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -shared -o http.so http.o -L/usr/lib/x86_64-linux-gnu  -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -L/usr/lib/llvm-10/lib  -L/usr/lib/x86_64-linux-gnu/mit-krb5 -Wl,--as-needed  -lcurl
     /usr/bin/clang-10 -Wno-ignored-attributes -fno-strict-aliasing -fwrapv -O2  -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5 -flto=thin -emit-llvm -c -o http.bc http.c
-    🪄 🤖 magicmake: Do you want to install nvidia-cuda-toolkit? [Y/n] n
-    make: Nothing to be done for 'all'.
     🪄 🤖 magicmake: no more packages to install ✅
+    installed:  libcurl4-gnutls-dev
+    magicmake@ubuntu:~/pgsql-http$ sudo make install
+    /bin/mkdir -p '/usr/lib/postgresql/12/lib'
+    /bin/mkdir -p '/usr/share/postgresql/12/extension'
+    /bin/mkdir -p '/usr/share/postgresql/12/extension'
+    /usr/bin/install -c -m 755  http.so '/usr/lib/postgresql/12/lib/http.so'
+    /usr/bin/install -c -m 644 .//http.control '/usr/share/postgresql/12/extension/'
+    /usr/bin/install -c -m 644 .//http--1.4.sql .//http--1.3--1.4.sql .//http--1.2--1.3.sql .//http--1.1--1.2.sql .//http--1.0--1.1.sql  '/usr/share/postgresql/12/extension/'
+    /bin/mkdir -p '/usr/lib/postgresql/12/lib/bitcode/http'
+    /bin/mkdir -p '/usr/lib/postgresql/12/lib/bitcode'/http/
+    /usr/bin/install -c -m 644 http.bc '/usr/lib/postgresql/12/lib/bitcode'/http/./
+    cd '/usr/lib/postgresql/12/lib/bitcode' && /usr/lib/llvm-10/bin/llvm-lto -thinlto -thinlto-action=thinlink -o http.index.bc http/http.bc
+    magicmake@ubuntu:~/pgsql-http$
 
 <h3 id="pguri">https://github.com/petere/pguri.git</h3>
 
-    $ git clone https://github.com/petere/pguri.git
-    $ cd pguri
-    $ magicmake
-    /bin/sh: 1: pkg-config: not found
+    magicmake@ubuntu:~$ git clone https://github.com/petere/pguri.git
+    Cloning into 'pguri'...
+    remote: Enumerating objects: 171, done.
+    remote: Counting objects: 100% (6/6), done.
+    remote: Compressing objects: 100% (5/5), done.
+    remote: Total 171 (delta 1), reused 4 (delta 1), pack-reused 165
+    Receiving objects: 100% (171/171), 39.19 KiB | 501.00 KiB/s, done.
+    Resolving deltas: 100% (81/81), done.
+    magicmake@ubuntu:~$ cd pguri/
+    magicmake@ubuntu:~/pguri$ magicmake
     Makefile:10: liburiparser not registed with pkg-config, build might fail
-    make: pkg-config: Command not found
+    Package liburiparser was not found in the pkg-config search path.
+    Perhaps you should add the directory containing `liburiparser.pc'
+    to the PKG_CONFIG_PATH environment variable
+    No package 'liburiparser' found
     gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC  -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o uri.o uri.c
     uri.c:10:10: fatal error: uriparser/Uri.h: No such file or directory
       10 | #include <uriparser/Uri.h>
           |          ^~~~~~~~~~~~~~~~~
     compilation terminated.
     make: *** [<builtin>: uri.o] Error 1
-    🪄 🤖 magicmake: Do you want to install liburiparser-dev? [Y/n] y
+    🪄 🤖 magicmake: do you want to install liburiparser-dev? [Y/n]
     Reading package lists... Done
     Building dependency tree
     Reading state information... Done
@@ -206,12 +249,15 @@ Below are few examples of the full console log of using `magicmake` to install a
       liburiparser1
     The following NEW packages will be installed:
       liburiparser-dev liburiparser1
-    0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
-    Need to get 0 B/51.3 kB of archives.
+    0 upgraded, 2 newly installed, 0 to remove and 13 not upgraded.
+    Need to get 51.3 kB of archives.
     After this operation, 229 kB of additional disk space will be used.
-    Do you want to continue? [Y/n] y
+    Do you want to continue? [Y/n]
+    Get:1 http://se.archive.ubuntu.com/ubuntu focal/universe amd64 liburiparser1 amd64 0.9.3-2 [39.3 kB]
+    Get:2 http://se.archive.ubuntu.com/ubuntu focal/universe amd64 liburiparser-dev amd64 0.9.3-2 [12.0 kB]
+    Fetched 51.3 kB in 0s (596 kB/s)
     Selecting previously unselected package liburiparser1:amd64.
-    (Reading database ... 83229 files and directories currently installed.)
+    (Reading database ... 92383 files and directories currently installed.)
     Preparing to unpack .../liburiparser1_0.9.3-2_amd64.deb ...
     Unpacking liburiparser1:amd64 (0.9.3-2) ...
     Selecting previously unselected package liburiparser-dev.
@@ -220,27 +266,23 @@ Below are few examples of the full console log of using `magicmake` to install a
     Setting up liburiparser1:amd64 (0.9.3-2) ...
     Setting up liburiparser-dev (0.9.3-2) ...
     Processing triggers for libc-bin (2.31-0ubuntu9.2) ...
-    🪄 🤖 magicmake: Do you want to install pkg-config? [Y/n] y
-    Reading package lists... Done
-    Building dependency tree
-    Reading state information... Done
-    The following NEW packages will be installed:
-      pkg-config
-    0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
-    Need to get 45.5 kB of archives.
-    After this operation, 195 kB of additional disk space will be used.
-    Get:1 http://se.archive.ubuntu.com/ubuntu focal/main amd64 pkg-config amd64 0.29.1-0ubuntu4 [45.5 kB]
-    Fetched 45.5 kB in 0s (236 kB/s)
-    Selecting previously unselected package pkg-config.
-    (Reading database ... 83246 files and directories currently installed.)
-    Preparing to unpack .../pkg-config_0.29.1-0ubuntu4_amd64.deb ...
-    Unpacking pkg-config (0.29.1-0ubuntu4) ...
-    Setting up pkg-config (0.29.1-0ubuntu4) ...
-    Processing triggers for man-db (2.9.1-1) ...
     gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC  -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5  -c -o uri.o uri.c
     gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -g -O2 -fstack-protector-strong -Wformat -Werror=format-security -fno-omit-frame-pointer -fPIC -shared -o uri.so uri.o -L/usr/lib/x86_64-linux-gnu  -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -L/usr/lib/llvm-10/lib  -L/usr/lib/x86_64-linux-gnu/mit-krb5 -Wl,--as-needed  -luriparser
     /usr/bin/clang-10 -Wno-ignored-attributes -fno-strict-aliasing -fwrapv -O2   -I. -I./ -I/usr/include/postgresql/12/server -I/usr/include/postgresql/internal  -Wdate-time -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/libxml2  -I/usr/include/mit-krb5 -flto=thin -emit-llvm -c -o uri.bc uri.c
     🪄 🤖 magicmake: no more packages to install ✅
+    installed:  liburiparser-dev
+    magicmake@ubuntu:~/pguri$ sudo make install
+    /bin/mkdir -p '/usr/lib/postgresql/12/lib'
+    /bin/mkdir -p '/usr/share/postgresql/12/extension'
+    /bin/mkdir -p '/usr/share/postgresql/12/extension'
+    /usr/bin/install -c -m 755  uri.so '/usr/lib/postgresql/12/lib/uri.so'
+    /usr/bin/install -c -m 644 .//uri.control '/usr/share/postgresql/12/extension/'
+    /usr/bin/install -c -m 644 .//uri--0.sql .//uri--1.sql .//uri--0--1.sql  '/usr/share/postgresql/12/extension/'
+    /bin/mkdir -p '/usr/lib/postgresql/12/lib/bitcode/uri'
+    /bin/mkdir -p '/usr/lib/postgresql/12/lib/bitcode'/uri/
+    /usr/bin/install -c -m 644 uri.bc '/usr/lib/postgresql/12/lib/bitcode'/uri/./
+    cd '/usr/lib/postgresql/12/lib/bitcode' && /usr/lib/llvm-10/bin/llvm-lto -thinlto -thinlto-action=thinlink -o uri.index.bc uri/uri.bc
+    magicmake@ubuntu:~/pguri$
 
 <h2 id="implementation">7. Implementation</h2>
 
@@ -321,7 +363,10 @@ using `awk`, handled by the script [update_file_packages.sh] shown in full below
 ```sh
 #!/bin/sh
 cat <<EOF
+\set ON_ERROR_STOP on
 BEGIN;
+SET work_mem TO '1GB';
+DROP TABLE IF EXISTS magicmake.package_dirs;
 DROP INDEX IF EXISTS magicmake.file_packages_file_name;
 TRUNCATE magicmake.file_packages;
 \echo 'Please wait, this might take several minutes...'
@@ -330,10 +375,12 @@ for apt_list in /var/lib/apt/lists/*.lz4
 do
   echo "\\\echo Importing $apt_list..."
   echo "COPY magicmake.file_packages (file_path, packages) FROM stdin;"
-  lz4 -c $apt_list | awk -F "[ \t]+" '{col=$NF;NF--;print $0 "\t" col}'
+  lz4 -c $apt_list | awk -F "[ \t]" '{col=$NF;NF--;while(length($NF)==0){NF--};print $0 "\t" col}'
   echo "\."
 done
 echo "CREATE INDEX file_packages_file_name ON magicmake.file_packages (file_name);"
+echo "CREATE TABLE magicmake.package_dirs AS SELECT DISTINCT left(file_path,-strpos(reverse(file_path),'/')) AS dir_path FROM magicmake.file_packages;"
+echo "ALTER TABLE magicmake.package_dirs ADD PRIMARY KEY (dir_path);"
 echo "COMMIT;"
 ```
 
@@ -358,14 +405,9 @@ after running `apt-file update` to update the `*.lz4` files on disk.
 
 <h3 id="magicmake-command">magicmake command</h3>
 
-`magicmake` will write the `strace` output to a temporary `strace_log_file`
+`magicmake` will write the `strace` output to a temporary `strace_log_dir`
 which will be read by the PostgreSQL's function `magicmake.suggest_packages()`.
-The file is made readable by any user to allow PostgreSQL to read it.
-
-```bash
-strace_log_file=$(mktemp)
-chmod o+r $strace_log_file
-```
+The files are made readable by any user to allow PostgreSQL to read it.
 
 `magicmake` will run the build and install commands in a loop,
 until no more packages to install can be found.
@@ -373,17 +415,24 @@ until no more packages to install can be found.
 ```bash
 while true;
 do
-  strace -e trace=file -o $strace_log_file -f $MAGICMAKE_BUILD_CMD
+  if [ $quiet = 1 ]
+  then
+    strace -e trace=%file,%process -o $strace_log_file -ff $MAGICMAKE_BUILD_CMD &>/dev/null
+  else
+    strace -e trace=%file,%process -o $strace_log_file -ff $MAGICMAKE_BUILD_CMD
+  fi
+  chmod o+r "$strace_log_file".*
   count=0
-  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_file')")
+  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_dir')")
   do
     count=$((count+1))
     install=0
     if [ $prompt = 0 ]
     then
+      echo "$console_msg_prefix installing [37;1m$package[0m"
       install=1
     else
-      read -p "$console_msg_prefix Do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
+      read -p "$console_msg_prefix do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
       if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
       then
         install=1
@@ -393,24 +442,35 @@ do
     fi
     if [ $install = 1 ]
     then
-      $MAGICMAKE_INSTALL_CMD $package
+      if [ $quiet = 1 ] && [ $prompt = 0 ]
+      then
+        $MAGICMAKE_INSTALL_CMD $package &>/dev/null
+      else
+        $MAGICMAKE_INSTALL_CMD $package
+      fi
+      installed_packages+=" $package"
     fi
   done
+  rm -f "$strace_log_file".*
   if [ $count = 0 ]
   then
     echo "$console_msg_prefix no more packages to install ✅"
+    if [ ! -z "$installed_packages" ]
+    then
+      echo "installed: [37;1m$installed_packages[0m"
+    fi
     break
   fi
 done
 ```
 
-Finally, it will remove the temporary `strace_log_file`.
+Finally, it will remove the temporary `strace_log_dir`.
 
 ```bash
-rm -f "$strace_log_file"
+rm -rf "$strace_log_dir"
 ```
 
-<h3 id="suggest-packages">magicmake.suggest_packages(strace_log_file_path text)</h3>
+<h3 id="suggest-packages">magicmake.suggest_packages(strace_log_dir text)</h3>
 
 The [magicmake.suggest_packages()] function uses a table [magicmake.strace] to store the strace log lines.
 
@@ -435,7 +495,7 @@ INSERT INTO magicmake.strace
   (log_line)
 SELECT
   log_line
-FROM regexp_split_to_table(pg_read_file(strace_log_file_path),E'\n') AS log_line;
+FROM regexp_split_to_table(pg_read_file(format('%s/%s',strace_log_dir,strace_log_file_path)),E'\n') AS log_line;
 ```
 
 The strace log file is splitted on newlines and only lines matching a regex to filter out possible file syscalls are imported.
@@ -444,30 +504,26 @@ The aggregate function [bool_or()] is used to find each `file_name` that is miss
 and returns each unique `file_name` with an array of all `file_path`s where the `MAGICMAKE_BUILD_CMD` was looking for the file.
 
 ```sql
-WITH
-missing_files AS
-(
-  SELECT
-    file_name,
-    array_agg(file_path) AS file_paths
-  FROM magicmake.strace
-  GROUP BY file_name
-  HAVING bool_or(missing) AND NOT bool_or(NOT missing)
-),
+INSERT INTO magicmake.missing_files
+  (file_name, file_paths)
+SELECT
+  file_name,
+  array_agg(DISTINCT file_path) AS file_paths
+FROM magicmake.strace
+GROUP BY file_name
+HAVING bool_or(missing) AND NOT bool_or(NOT missing);
 ```
 
 `file_name` and `file_paths` from the `strace` query above is then matched against the `magicmake.file_packages` table's corresponding columns.
 
 ```sql
-missing_packages AS
-(
-  SELECT
-    packages
-  FROM missing_files
-  JOIN magicmake.file_packages
-    ON file_packages.file_name = missing_files.file_name
+SELECT
+  file_packages.packages,
+  file_packages.file_path
+FROM magicmake.missing_files
+JOIN magicmake.file_packages
+  ON file_packages.file_name = missing_files.file_name
   AND file_packages.file_path = ANY(missing_files.file_paths)
-),
 ```
 
 `packages` normally only contains one package, but in a few cases
@@ -484,9 +540,10 @@ which is extracted using the regular expression `^.*?([^/]+)$`,
 which captures the last string of non-slash characters.
 
 ```sql
-missing_package_names AS
+WITH
+missing_packages AS
 (
-  SELECT DISTINCT
+  SELECT
     regexp_replace
     (
       --
@@ -499,9 +556,9 @@ missing_package_names AS
       --
       '^.*?([^/]+)$',
       '\1'
-    ) AS package
-  FROM missing_packages
-),
+    ) AS package,
+    array_agg(file_path) AS file_paths
+  FROM
 ```
 
 New missing packages that have not been suggested before
@@ -510,7 +567,7 @@ and returned to the `magicmake` script, which will prompt the
 user whether or not to install each suggested package.
 
 ```sql
-new_missing_packages AS
+suggest_new_packages AS
 (
   --
   -- remember what packages have been suggested
@@ -518,20 +575,21 @@ new_missing_packages AS
   -- when prompted if a package should be installed
   --
   INSERT INTO magicmake.suggested_packages
-    (package)
+    (package, file_paths)
   SELECT
-    package
-  FROM missing_package_names
-  WHERE NOT EXISTS
+    package, file_paths
+  FROM prioritize_versions
+  WHERE priority = 1
+  AND NOT EXISTS
   (
     SELECT 1 FROM magicmake.suggested_packages
-    WHERE suggested_packages.package = missing_package_names.package
+    WHERE suggested_packages.package = prioritize_versions.package
   )
   RETURNING package
 )
 SELECT
   package
-FROM new_missing_packages;
+FROM suggest_new_packages;
 ```
 
 [strace]: https://en.wikipedia.org/wiki/Strace
