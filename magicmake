@@ -64,6 +64,9 @@ do
 done
 shift $((OPTIND-1))
 
+psql -Xqc "TRUNCATE magicmake.installed_packages;"
+dpkg-query -l | grep -E '^ii' | sed 's/:/ /g' | awk '{print "INSERT INTO magicmake.installed_packages (package) VALUES (\047"$2"\047);"}' | psql -qX
+
 if [ -z "$MAGICMAKE_BUILD_CMD" ]
 then
   if [ $# -eq 0 ]
@@ -84,14 +87,15 @@ then
   fi
 fi
 
-strace_log_dir=$(mktemp -d)
-strace_log_file="$strace_log_dir/strace.log"
+trace_files_log=$(mktemp)
+trace_commands_log=$(mktemp)
 
 #
 # allow read permissions to anyone on
 # so that the PostgreSQL function can read it
 #
-chmod o+rx "$strace_log_dir"
+chmod o+rx "$trace_files_log"
+chmod o+rx "$trace_commands_log"
 #
 # build a list of all installed packages
 # to be displayed at the end
@@ -101,19 +105,35 @@ not_installed_packages=""
 #
 # loop until there are no more packages to install
 #
-while true;
+while true
 do
   #
   # the MAGICMAKE_BUILD_CMD is run via `strace` which will log the full path
   # of any successful/unsuccessful file accesses
   #
+  sudo trace-bpfcc \
+    'do_sys_open "file_name=%s", arg2' \
+    ':c:access "file_name=%s", arg1' \
+    '__x64_sys_newfstatat "file_name=%s", arg2' \
+    '__x64_sys_newlstat "file_name=%s", arg1' \
+    '__x64_sys_newstat "file_name=%s", arg1' \
+    'do_faccessat "file_name=%s", arg2' \
+    > "$trace_files_log" &
+  trace_files_pid=$!
+  sudo execsnoop-bpfcc > "$trace_commands_log" &
+  trace_commands_pid=$!
+  #
+  # trace takes a while to start
+  #
+  sleep 3
   if [ $quiet = 1 ]
   then
-    strace -e trace=%file,%process -o $strace_log_file -ff $MAGICMAKE_BUILD_CMD &>/dev/null
+    $MAGICMAKE_BUILD_CMD &>/dev/null
   else
-    strace -e trace=%file,%process -o $strace_log_file -ff $MAGICMAKE_BUILD_CMD
+    $MAGICMAKE_BUILD_CMD
   fi
-  chmod o+r "$strace_log_file".*
+  sudo pkill -P "$trace_files_pid"
+  sudo pkill -P "$trace_commands_pid"
   #
   # since build tools look for files at different paths,
   # the same file_name might at first be missing at some path(s)
@@ -128,21 +148,45 @@ do
   # or no rows if no packages to install could be found
   #
   count=0
-  for package in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$strace_log_dir')")
+  for packages in $(psql -X -t -A -c "SELECT magicmake.suggest_packages('$trace_files_log','$trace_commands_log')")
   do
     count=$((count+1))
     install=0
-    if [ $prompt = 0 ]
+    if [[ $packages =~ , ]]
     then
-      echo "$console_msg_prefix installing [37;1m$package[0m"
-      install=1
+      echo "$console_msg_prefix there are multiple packages to choose between, please select which one to install:"
+      IFS=',' read -ra options <<< "$packages"
+      select option in ${options[@]}
+      do
+        package=${options[$REPLY-1]}
+        if [ ! -z $package ]
+        then
+          echo "$console_msg_prefix installing [37;1m$package[0m"
+          install=1
+          break
+        fi
+      done
     else
-      read -p "$console_msg_prefix do you want to install [37;1m$package[0m? [Y/n] " -r yes_no
-      if [[ "$yes_no" =~ ^[Yy]$ ]] || [[ -z "$yes_no" ]]
+      package=$packages
+      if [ $prompt = 0 ]
       then
+        echo "$console_msg_prefix installing [37;1m$package[0m"
         install=1
       else
-        install=0
+        yes_no=""
+        while true
+        do
+          read -p "$console_msg_prefix do you want to install [37;1m$package[0m? [y/n] " -r yes_no
+          if [[ $yes_no == "y" ]]
+          then
+            install=1
+            break
+          elif [[ $yes_no == "n" ]]
+          then
+            install=0
+            break
+          fi
+        done
       fi
     fi
     if [ $install = 1 ]
@@ -162,7 +206,6 @@ do
       not_installed_packages+=" $package"
     fi
   done
-  rm -f "$strace_log_file".*
   if [ $count = 0 ]
   then
     echo "$console_msg_prefix no more packages to install ✅"
@@ -180,4 +223,5 @@ done
 #
 # the temporary strace file is removed at the end
 #
-rm -rf "$strace_log_dir"
+rm -f "$trace_files_log"
+rm -f "$trace_commands_log"
