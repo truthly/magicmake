@@ -15,11 +15,14 @@ all: magicmake--1.0.sql
 
 SQL_SRC = \
   header.sql \
+	TABLES/import_apt_lists.sql \
 	TABLES/file_packages.sql \
-	TABLES/strace.sql \
-	TABLES/missing_files.sql \
-	TABLES/missing_dirs.sql \
+	TABLES/installed_packages.sql \
+	TABLES/trace_files.sql \
+	TABLES/trace_commands.sql \
 	TABLES/suggested_packages.sql \
+	FUNCTIONS/hypothetical_file_paths.sql \
+	FUNCTIONS/normalize_path.sql \
 	FUNCTIONS/suggest_packages.sql \
 	footer.sql
 

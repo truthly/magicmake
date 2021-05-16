@@ -2,3 +2,4 @@ comment = 'magicmake automatically detects and installs missing packages'
 default_version = '1.0'
 superuser = true
 schema = magicmake
+requires = 'pg_trgm'
