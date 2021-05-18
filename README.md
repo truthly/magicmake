@@ -561,3 +561,4 @@ The [magicmake.suggest_packages()] function uses the [magicmake.trace_files] and
 [magicmake.trace_commands]: https://github.com/truthly/magicmake/blob/master/TABLES/trace_commands.sql
 [magicmake.file_packages]: https://github.com/truthly/magicmake/blob/master/TABLES/file_packages.sql
 [magicmake.suggested_packages]: https://github.com/truthly/magicmake/blob/master/TABLES/suggested_packages.sql
+[update_file_packages.sh]: https://github.com/truthly/magicmake/blob/master/update_file_packages.sh
