@@ -39,7 +39,13 @@ The next step in the build process is to run `make`, not included in this demo.
 
 <h2 id="usage">2. Usage</h2>
 
-**magicmake** \[**-yqhlc**\] \[*build_command* \[*build_arguments*\]\]
+**magicmake** \[**-yq**\] \[*build_command* \[*build_arguments*\]\]
+
+**magicmake** \[**-hlc**\]
+
+**magicmake** \[**-s**\] *pattern*
+
+**magicmake** \[**-F**\] *file_path*
 
 <h3 id="options">Options</h3>
 
