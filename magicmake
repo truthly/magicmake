@@ -128,6 +128,7 @@ do
     '__x64_sys_newlstat "file_name=%s", arg1' \
     '__x64_sys_newstat "file_name=%s", arg1' \
     'do_faccessat "file_name=%s", arg2' \
+    '__x64_sys_execve "file_name=%s", arg1' \
     > "$trace_files_log" &
   trace_files_pid=$!
   sudo execsnoop-bpfcc > "$trace_commands_log" &
