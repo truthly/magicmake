@@ -56,8 +56,8 @@ FROM
   FROM (
     SELECT array_agg(package) FROM suggest_new_packages
   ) AS q1
-  JOIN file_packages AS a ON a.package = ANY(q1.array_agg)
-  JOIN file_packages AS b ON b.package = ANY(q1.array_agg) AND a.file_path = b.file_path
+  JOIN magicmake.file_packages AS a ON a.package = ANY(q1.array_agg)
+  JOIN magicmake.file_packages AS b ON b.package = ANY(q1.array_agg) AND a.file_path = b.file_path
   GROUP BY a.package
 ) AS q2
 GROUP BY conflict_group;
