@@ -1,1 +1,2 @@
-CREATE EXTENSION magicmake;
+CREATE EXTENSION magicmake CASCADE;
+NOTICE:  installing required extension "pg_trgm"

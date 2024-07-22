@@ -1,1 +1,1 @@
-CREATE EXTENSION magicmake;
+CREATE EXTENSION magicmake CASCADE;
