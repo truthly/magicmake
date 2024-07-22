@@ -148,7 +148,7 @@ but as the author is only using Ubuntu, no effort has been made to port it to ot
 Install dependencies:
 
     sudo apt-get update
-    sudo apt-get install -y postgresql postgresql-server-dev-12 apt-file bpfcc-tools
+    sudo apt-get install -y postgresql postgresql-server-dev-12 apt-file bpfcc-tools lz4
     sudo apt-file update
 
 Create a PostgreSQL database for your user, if you don't have one already.
